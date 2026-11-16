@@ -11,7 +11,11 @@ namespace TennisPhone
         /// <summary>Distance du bout du manche au centre du tamis, en mètres.</summary>
         public const float HeadDistance = 0.47f;
 
-        public static Color StringColor => Palette.Cordage;
+        /// <summary>Part de la couleur du cordage renvoyée sous la lumière, et part émise.</summary>
+        public const float StringBody = 0.8f;
+        public const float StringGlow = 0.3f;
+
+        public static Color StringColor => Palette.Cordage * StringBody;
 
         /// <summary>Construit une raquette aux couleurs du joueur. « strings » reçoit le cordage.</summary>
         public static Transform Build(out Renderer strings)
@@ -33,8 +37,10 @@ namespace TennisPhone
                 Quaternion.Euler(90f, 0f, 0f), new Vector3(0.022f, 0.07f, 0.022f), teamColor);
             CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cadre", new Vector3(0f, 0f, HeadDistance),
                 Quaternion.identity, new Vector3(0.27f, 0.011f, 0.33f), teamColor);
+            // Un peu lumineux : le tamis reste clair même vu par sa face à l'ombre.
             Transform cordage = CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cordage", new Vector3(0f, 0f, HeadDistance),
-                Quaternion.identity, new Vector3(0.24f, 0.013f, 0.3f), Palette.NewMat(Palette.Cordage));
+                Quaternion.identity, new Vector3(0.24f, 0.013f, 0.3f),
+                Palette.NewLumineux(Palette.Cordage * StringBody, Palette.Cordage * StringGlow));
 
             strings = cordage.GetComponent<Renderer>();
             return root;

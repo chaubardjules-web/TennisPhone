@@ -35,10 +35,15 @@ namespace TennisPhone
 
         Transform ballVisual;
         Transform ballShadow;
-        Transform playerVisual;
+        CharacterModel player;
+        CharacterModel opponent;
         Transform racketVisual;
-        Transform opponentVisual;
         Transform opponentRacket;
+        Renderer playerStrings;
+        Renderer opponentStrings;
+        Vector3 lastPlayerPosition;
+        Vector3 lastOpponentPosition;
+        bool hasLastPositions;
         Transform landingMarker;
         Renderer landingRenderer;
 
@@ -105,21 +110,12 @@ namespace TennisPhone
             ballVisual.gameObject.SetActive(false);
             ballShadow.gameObject.SetActive(false);
 
-            playerVisual = BuildCharacter("Joueur", Palette.Framboise);
-            racketVisual = RacketModel.Build(out Renderer _);
-            opponentVisual = BuildCharacter("Adversaire", Palette.Lavande);
-            opponentRacket = RacketModel.Build(out Renderer _);
+            player = CharacterModel.BuildPlayer(config.handedness);
+            racketVisual = RacketModel.Build(Palette.Framboise, out playerStrings);
+            racketVisual.name = "Raquette du joueur";
+            opponent = CharacterModel.BuildOpponent();
+            opponentRacket = RacketModel.Build(Palette.Prune, out opponentStrings);
             opponentRacket.name = "Raquette de l'adversaire";
-        }
-
-        static Transform BuildCharacter(string name, Color color)
-        {
-            Transform root = new GameObject(name).transform;
-            CourtBuilder.Primitive(PrimitiveType.Capsule, root, "Corps", new Vector3(0f, 0.75f, 0f),
-                Quaternion.identity, new Vector3(0.45f, 0.75f, 0.35f), color);
-            CourtBuilder.Primitive(PrimitiveType.Sphere, root, "Tête", new Vector3(0f, 1.65f, 0f),
-                Quaternion.identity, Vector3.one * 0.3f, Palette.BoisNaturel);
-            return root;
         }
 
         // ---------------------------------------------------------------- Événements du match
@@ -175,22 +171,34 @@ namespace TennisPhone
                 ballShadow.position = new Vector3(ball.Position.x, 0.009f, ball.Position.z);
             }
 
+            float deltaTime = Mathf.Max(Time.deltaTime, 1e-4f);
             Vector3 playerPosition = rally.PlayerPosition;
-            playerVisual.position = playerPosition;
+            Vector3 opponentPosition = rally.OpponentPosition;
+            if (!hasLastPositions)
+            {
+                lastPlayerPosition = playerPosition;
+                lastOpponentPosition = opponentPosition;
+                hasLastPositions = true;
+            }
 
-            // La raquette est tenue du côté où la balle arrive, à hauteur de hanche.
+            player.Move(playerPosition, (playerPosition - lastPlayerPosition) / deltaTime, deltaTime);
+            opponent.Move(opponentPosition, (opponentPosition - lastOpponentPosition) / deltaTime, deltaTime);
+            lastPlayerPosition = playerPosition;
+            lastOpponentPosition = opponentPosition;
+
+            // La raquette est tenue du côté où la balle arrive, à hauteur de hanche ; le bras la suit.
             Vector3 hand = playerPosition + new Vector3(rally.HittingSide * 0.35f, 0.95f, 0.15f);
             racketVisual.SetPositionAndRotation(hand, rally.RacketRotation);
+            player.Pose(hand);
 
             // L'adversaire regarde vers le joueur ; sa raquette balaie brièvement quand il frappe.
-            Vector3 opponentPosition = rally.OpponentPosition;
             float opponentSide = rally.OpponentHittingSide;
-            opponentVisual.position = opponentPosition;
             float swingProgress = Mathf.Clamp01((Time.unscaledTime - rally.OpponentSwingTime) / 0.3f);
             float sweep = Mathf.Lerp(-70f, 70f, Mathf.SmoothStep(0f, 1f, swingProgress)) * -opponentSide;
             Vector3 opponentHand = opponentPosition + new Vector3(opponentSide * 0.35f, 0.95f, -0.15f);
             opponentRacket.SetPositionAndRotation(opponentHand,
                 Quaternion.Euler(0f, 180f + (swingProgress < 1f ? sweep : 0f), 0f) * Quaternion.Euler(-55f, 0f, 0f));
+            opponent.Pose(opponentHand);
         }
 
         /// <summary>La caméra accompagne un peu le joueur sur la largeur.</summary>
