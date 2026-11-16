@@ -173,7 +173,7 @@ Pour un court vert, seules deux couleurs changent ; le reste de la charte est id
 | Gazon | `#3F8F4A` | Sarcelle |
 | Gazon tondu | `#378242` | Sarcelle profonde |
 
-Contrastes : balle sur gazon 3,2:1 et 3,8:1 ; lignes sur gazon 3,7:1 et 4,3:1 ; maillot lavande 2,1:1. La sarcelle reste le choix par défaut : sur du vert, la balle ne se détache plus que par sa clarté, plus par sa teinte. Le choix se fait par un champ `Palette.Surface` (énumération `Sarcelle`, `Gazon`). La physique du rebond ne change pas : elle reste réglée dans `GameplayConfig`.
+Contrastes : balle sur gazon 3,2:1 et 3,8:1 ; lignes sur gazon 3,7:1 et 4,3:1 ; maillot lavande 2,1:1. **Décision de l'utilisateur du 2026-11-16 : la surface retenue est le gazon**, avec le stade de jour (section 9 bis). Sur du vert, la balle ne se détache plus que par sa clarté, plus par sa teinte : c'est le prix accepté de ce choix. La sarcelle reste la surface du soir des lampions. Le choix se fait par le champ `Surface` du composant `MatchVisuals` (énumération `Sarcelle`, `Gazon`), que `Palette.Surface` reprend au lancement. La physique du rebond ne change pas : elle reste réglée dans `GameplayConfig`.
 
 ## 3. Matériaux
 
