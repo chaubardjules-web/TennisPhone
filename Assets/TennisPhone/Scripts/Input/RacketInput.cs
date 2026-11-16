@@ -18,6 +18,7 @@ namespace TennisPhone
 
         PhoneLink link;
         SwingDetector detector;
+        readonly TossDetector tossDetector = new TossDetector();
         Quaternion yawOffset = Quaternion.identity;
         Vector3 lastMousePosition;
         float mouseSpeed;
@@ -27,6 +28,9 @@ namespace TennisPhone
 
         /// <summary>Déclenché sur le thread principal à chaque swing, quelle que soit la source.</summary>
         public event Action<SwingEvent> Swung;
+
+        /// <summary>Déclenché quand le joueur fait le geste de lancer du service (téléphone levé, ou flèche haut).</summary>
+        public event Action Tossed;
 
         /// <summary>
         /// Déclenché peu après Swung quand la fin du geste change l'effet du coup (slice).
@@ -45,6 +49,9 @@ namespace TennisPhone
         public MotionFrame LatestFrame { get; private set; }
 
         public bool IsTrackingSwing => detector != null && detector.IsTracking;
+
+        /// <summary>Vrai quand le téléphone est tenu assez bas pour qu'un lever déclenche le lancer.</summary>
+        public bool IsTossArmed => tossDetector.IsArmed;
 
         /// <summary>Vitesse lissée de la souris, en pixels par seconde.</summary>
         public float MouseSpeed => mouseSpeed;
@@ -111,6 +118,13 @@ namespace TennisPhone
             LatestFrame = frame;
             HasFrame = true;
 
+            tossDetector.ArmElevation = config.tossArmElevation;
+            tossDetector.RaiseElevation = config.tossRaiseElevation;
+            if (tossDetector.Process(frame.TopElevation))
+            {
+                Tossed?.Invoke();
+            }
+
             SwingUpdate update = detector.Process(frame, out SwingEvent swing);
             if (update == SwingUpdate.None)
             {
@@ -148,6 +162,12 @@ namespace TennisPhone
                 // Recentre : la tête de raquette pointe vers le fond du court.
                 float yaw = DeviceOrientationMath.ToUnityRotation(link.Latest.Orientation).eulerAngles.y;
                 yawOffset = Quaternion.Euler(0f, -yaw, 0f);
+            }
+
+            if (Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                // Au clavier, la flèche haut lance la balle de service.
+                Tossed?.Invoke();
             }
 
             if (Input.GetMouseButtonDown(0))

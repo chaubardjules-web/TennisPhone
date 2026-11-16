@@ -10,8 +10,8 @@ Jeu de tennis Unity, solo contre une IA, vue derrière le joueur. L'iPhone sert 
 - **Page manette** : bouton « Activer la raquette » (permission DeviceMotion iOS déclenchée par un clic), envoi DeviceMotion + DeviceOrientation à 60 Hz.
 - **Vibration** : Safari iOS n'a pas d'API de vibration. Tenter un contournement, avec son + flash d'écran en repli.
 - **Joueur** : déplacement automatique, le joueur ne gère que le swing. Droitier par défaut, réglable.
-- **Swing** : pic d'accélération + vitesse angulaire. Timing → direction (tôt = croisé, tard = long de ligne), intensité → puissance, rotation du poignet → lift ou slice.
-- **Service** : deux gestes (un geste vers le haut lance la balle, un swing la frappe).
+- **Swing** : pic d'accélération + vitesse angulaire. Timing → direction (tôt = croisé, tard = long de ligne), intensité → puissance, geste du poignet → lift ou slice (voir « État du projet » pour ce que les mesures ont montré).
+- **Service** : deux gestes (lever le téléphone lance la balle, un swing la frappe).
 - **Score** : 15/30/40, égalité, avantage. Set au premier à 3 jeux, réglable.
 
 ## Contraintes
@@ -33,3 +33,46 @@ Jeu de tennis Unity, solo contre une IA, vue derrière le joueur. L'iPhone sert 
 6. e. Score, service, HUD.
 
 Après chaque étape : lancer le jeu, lire la console, corriger, puis commit Git et push vers le dépôt GitHub privé.
+
+## État du projet (2026-11-16)
+
+Les étapes REA et a à e sont faites. Le jeu complet se joue dans `Assets/TennisPhone/Scenes/Court.unity`.
+
+### Ce que les mesures réelles ont changé par rapport au cadrage
+
+Deux enregistrements des capteurs de l'iPhone du joueur ont servi à régler la détection :
+
+- **Lift** : rotation rapide du poignet autour du manche (plus de 250 °/s en moyenne pendant le geste).
+- **Slice** : le poignet tourne dans le même sens que pour le lift. Ce qui le distingue : l'écran du téléphone finit tourné vers le ciel après la frappe. Il est donc reconnu juste après l'impact (`SwingRefined`, même `Id` que le swing), et la trajectoire de la balle est corrigée en vol.
+- **Lancer du service** : le geste est trop lent pour le détecteur de swing. Il est reconnu par l'inclinaison : téléphone tenu bas, puis levé au-dessus de 55° (`TossDetector`).
+- **Vibration** : rien sur iPhone malgré deux contournements. Le retour à l'impact est un son et un flash d'écran.
+
+### Scènes
+
+- `Court.unity` : le match (service, échange, score, IA).
+- `SwingLab.unity` : raquette seule, jauges du swing, enregistreur de capteurs (touche G : enregistrement guidé).
+- `SensorDebug.unity` : connexion du téléphone et capteurs bruts.
+
+Les scènes sont construites par le code : menu `TennisPhone` de l'éditeur (`Assets/TennisPhone/Editor/SceneBuilder.cs`). Tout le décor et les personnages sont créés au lancement par `CourtBuilder` et `RallyController`.
+
+### Touches (scène du court)
+
+Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de service (ou lift si maintenue pendant un clic). Flèche bas maintenue : slice. `R` : recentrer la raquette. `D` : changer le niveau de l'IA. `T` : mode démonstration (le jeu joue à la place du joueur). `Entrée` : rejouer un set.
+
+### Connexion du téléphone
+
+- Unity sert la page manette en HTTPS sur le port 8443 et la page d'installation du certificat en HTTP sur le port 8081.
+- Le pare-feu Windows doit autoriser l'éditeur Unity sur le type de réseau utilisé.
+- Le certificat serveur est régénéré tout seul quand l'adresse IP du PC change ; l'autorité installée sur l'iPhone reste valable.
+
+### Outils
+
+- 60 tests EditMode dans `Assets/TennisPhone/Tests/EditMode` (détecteur, physique, frappe, IA, score).
+- Menu `TennisPhone > Simuler les frappes de l'adversaire` : taux de fautes de l'IA par niveau.
+- `Recordings/` (non versionné) contient les enregistrements de capteurs ; `SwingReplay` les rejoue dans le détecteur.
+
+### Reste à faire
+
+- Régler l'équilibre en jouant avec l'iPhone : les échanges sont longs (personne ne marque de point gagnant direct) et le niveau normal est probablement trop facile.
+- Vérifier les revers liftés et slicés : aucune mesure réelle, le réglage est le miroir du coup droit.
+- Habillage graphique original, sons, écran d'accueil.

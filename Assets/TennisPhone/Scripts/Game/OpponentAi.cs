@@ -29,6 +29,9 @@ namespace TennisPhone
         [Tooltip("Vitesse maximale (m/s) de ses frappes.")]
         [Min(1f)] public float shotSpeedMax = 22f;
 
+        [Tooltip("Vitesse (m/s) de sa première balle de service. La seconde est plus lente et plus sûre.")]
+        [Min(5f)] public float serveSpeed = 29f;
+
         [Tooltip("Erreur maximale de visée (degrés) sur un coup imprécis.")]
         [Min(0f)] public float aimErrorDegrees = 3.5f;
 

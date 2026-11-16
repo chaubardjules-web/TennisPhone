@@ -31,6 +31,7 @@ namespace TennisPhone
                 YawRate = Vector3.Dot(angularVelocity, up),
                 RollRate = angularVelocity.y,
                 FaceUp = up.z,
+                TopElevation = Mathf.Asin(Mathf.Clamp(up.y, -1f, 1f)) * Mathf.Rad2Deg,
             };
         }
     }

@@ -208,21 +208,65 @@ namespace TennisPhone
         [Tooltip("Distance (m) derrière la ligne de fond où le joueur se replace.")]
         [Min(0f)] public float playerHomeDepth = 0.8f;
 
-        [Header("Engagement (en attendant le service)")]
-        [Tooltip("Délai (s) entre la fin d'un point et l'engagement suivant.")]
-        [Min(0.2f)] public float feederInterval = 1.5f;
+        [Header("Match")]
+        [Tooltip("Nombre de jeux à gagner pour remporter le set.")]
+        [Min(1)] public int gamesToWinSet = 3;
 
-        [Tooltip("Vitesse (m/s) de la balle d'engagement.")]
-        [Min(5f)] public float feederSpeed = 16f;
+        [Tooltip("Si coché, il faut aussi deux jeux d'écart pour gagner le set.")]
+        public bool setRequiresTwoGameLead;
 
-        [Tooltip("Profondeur minimale (m depuis le filet) du rebond de la balle d'engagement.")]
-        [Min(1f)] public float feederDepthMin = 6.5f;
+        [Tooltip("Si coché, le joueur sert le premier jeu.")]
+        public bool playerServesFirst = true;
 
-        [Tooltip("Profondeur maximale (m depuis le filet) du rebond de la balle d'engagement.")]
-        [Min(1f)] public float feederDepthMax = 10f;
+        [Tooltip("Pause (s) entre la fin d'un point et le service suivant.")]
+        [Min(0.3f)] public float pointPause = 2.2f;
 
-        [Tooltip("Demi-largeur (m) de la zone visée à l'engagement.")]
-        [Min(0f)] public float feederHalfWidth = 3f;
+        [Header("Service : lancer")]
+        [Tooltip("Inclinaison (degrés) sous laquelle le téléphone doit repasser avant un nouveau lancer.")]
+        [Range(-30f, 60f)] public float tossArmElevation = 30f;
+
+        [Tooltip("Inclinaison (degrés) du téléphone qui déclenche le lancer : il pointe vers le haut.")]
+        [Range(20f, 85f)] public float tossRaiseElevation = 55f;
+
+        [Tooltip("Hauteur (m) d'où la balle est lancée.")]
+        [Min(0.5f)] public float tossReleaseHeight = 1.3f;
+
+        [Tooltip("Vitesse verticale (m/s) du lancer. Plus elle est grande, plus la balle monte et laisse de temps.")]
+        [Min(2f)] public float tossSpeed = 6.5f;
+
+        [Tooltip("Hauteur (m) sous laquelle un lancer non frappé est perdu et doit être refait.")]
+        [Min(0.3f)] public float tossMinHeight = 1.5f;
+
+        [Header("Service : frappe")]
+        [Tooltip("Délai idéal (s) entre le lancer et la frappe.")]
+        [Min(0.1f)] public float serveIdealDelay = 0.9f;
+
+        [Tooltip("Écart maximal (s) autour du délai idéal pour que le service parte.")]
+        [Min(0.05f)] public float serveTimingWindow = 0.4f;
+
+        [Tooltip("Vitesse du service (m/s) pour un swing de puissance 0.")]
+        [Min(5f)] public float serveSpeedMin = 22f;
+
+        [Tooltip("Vitesse du service (m/s) pour un swing de puissance 1.")]
+        [Min(5f)] public float serveSpeedMax = 38f;
+
+        [Tooltip("Marge (m) au-dessus du filet visée au service.")]
+        [Min(0f)] public float serveNetMargin = 0.25f;
+
+        [Tooltip("Distance (m) entre le point visé et la ligne de service, pour un timing parfait.")]
+        [Min(0f)] public float serveDepthMargin = 1f;
+
+        [Tooltip("Décalage latéral (m) du point visé pour un swing en bord de fenêtre.")]
+        [Min(0f)] public float serveAimSpread = 1.7f;
+
+        [Tooltip("Allongement (m) du service pour un swing en bord de fenêtre : un mauvais timing envoie la balle trop longue.")]
+        [Min(0f)] public float serveLongError = 2f;
+
+        [Tooltip("Distance (m) entre le serveur et la marque centrale.")]
+        [Min(0.2f)] public float serverOffset = 1.2f;
+
+        [Tooltip("Délai (s) avant que l'adversaire lance sa balle de service.")]
+        [Min(0.3f)] public float aiServeDelay = 1.6f;
 
         [Header("Adversaire")]
         [Tooltip("Niveau de l'adversaire au lancement. La touche D le change en jeu.")]
@@ -235,6 +279,7 @@ namespace TennisPhone
             speedMultiplier = 0.7f,
             shotSpeedMin = 14f,
             shotSpeedMax = 18f,
+            serveSpeed = 24f,
             aimErrorDegrees = 12f,
             sloppyShotRate = 0.45f,
             settleTime = 0.45f,
@@ -249,6 +294,7 @@ namespace TennisPhone
             speedMultiplier = 0.85f,
             shotSpeedMin = 16f,
             shotSpeedMax = 22f,
+            serveSpeed = 29f,
             aimErrorDegrees = 9f,
             sloppyShotRate = 0.3f,
             settleTime = 0.3f,
@@ -263,6 +309,7 @@ namespace TennisPhone
             speedMultiplier = 0.97f,
             shotSpeedMin = 19f,
             shotSpeedMax = 26f,
+            serveSpeed = 34f,
             aimErrorDegrees = 6f,
             sloppyShotRate = 0.15f,
             settleTime = 0.2f,

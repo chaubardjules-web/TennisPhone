@@ -58,6 +58,12 @@ namespace TennisPhone
         /// -1 vers le bas, 0 quand il est vertical.
         /// </summary>
         public float FaceUp;
+
+        /// <summary>
+        /// Inclinaison du haut du téléphone, en degrés : 90 quand il pointe vers le ciel,
+        /// 0 à l'horizontale, -90 vers le sol.
+        /// </summary>
+        public float TopElevation;
     }
 
     /// <summary>
