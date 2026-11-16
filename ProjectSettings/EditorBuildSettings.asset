@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/TennisPhone/Scenes/SensorDebug.unity
+    guid: 207e2f4cafbeb8a4b81cc175a5632bea
   m_configObjects: {}
