@@ -31,6 +31,9 @@ namespace TennisPhone
         public readonly ConcurrentQueue<SensorSample> Samples = new ConcurrentQueue<SensorSample>();
         public readonly ConcurrentQueue<string> Messages = new ConcurrentQueue<string>();
 
+        /// <summary>Boutons utilisés sur la page manette (« toss », « pause »…), à lire depuis le thread principal.</summary>
+        public readonly ConcurrentQueue<string> Commands = new ConcurrentQueue<string>();
+
         readonly int httpsPort;
         readonly int httpPort;
         readonly X509Certificate2 certificate;
@@ -407,6 +410,14 @@ namespace TennisPhone
                 {
                     roundTripMs = rtt;
                     clockOffsetMs = offset;
+                }
+            }
+            else if (text.StartsWith("b,"))
+            {
+                // Bouton de la page manette.
+                if (client == activeClient && text.Length <= 34)
+                {
+                    Commands.Enqueue(text.Substring(2));
                 }
             }
             else if (text.StartsWith("h,"))

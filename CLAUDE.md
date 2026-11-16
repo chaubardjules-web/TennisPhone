@@ -44,7 +44,7 @@ Deux enregistrements des capteurs de l'iPhone du joueur ont servi à régler la 
 
 - **Lift** : rotation rapide du poignet autour du manche (plus de 250 °/s en moyenne pendant le geste).
 - **Slice** : le poignet tourne dans le même sens que pour le lift. Ce qui le distingue : l'écran du téléphone finit tourné vers le ciel après la frappe. Il est donc reconnu juste après l'impact (`SwingRefined`, même `Id` que le swing), et la trajectoire de la balle est corrigée en vol.
-- **Lancer du service** : le geste est trop lent pour le détecteur de swing. Il est reconnu par l'inclinaison : téléphone tenu bas, puis levé au-dessus de 55° (`TossDetector`).
+- **Lancer du service** : le geste est trop lent pour le détecteur de swing. Il est reconnu par l'inclinaison : téléphone tenu bas, puis levé au-dessus de 55° (`TossDetector`). La vitesse du lever (60 à 300 °/s, d'après les levers enregistrés) règle la hauteur du lancer : lever lent, balle basse ; lever vif, balle haute. L'instant idéal de frappe est celui où la balle redescend à `serveContactHeight` : un lancer haut laisse donc plus de temps. Le bouton du téléphone et la flèche haut donnent un lancer moyen (`tossDefaultStrength`).
 - **Vibration** : rien sur iPhone malgré deux contournements. Le retour à l'impact est un son et un flash d'écran.
 
 ### Scènes
@@ -68,7 +68,20 @@ La charte est dans `ART_DIRECTION.md` ; sa section 9 bis dit ce qui a été rete
 
 ### Touches (scène du court)
 
-Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de service (ou lift si maintenue pendant un clic). Flèche bas maintenue : slice. `R` : recentrer la raquette. `D` : changer le niveau de l'IA. `T` : mode démonstration (le jeu joue à la place du joueur). `Entrée` : rejouer un set.
+Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de service (ou lift si maintenue pendant un clic). Flèche bas maintenue : slice. `R` : recentrer la raquette. `D` : changer le niveau de l'IA. `T` : mode démonstration (le jeu joue à la place du joueur). `P` : pause. `C` : déplacement par webcam activé ou coupé. `Entrée` : rejouer un set.
+
+### Boutons du téléphone
+
+La page manette (`Resources/controller.html`) affiche le score et les annonces, et envoie ses boutons au jeu (`b,<action>`) : `toss` (grand bouton, lancer la balle), `recenter`, `pause`, `level`, `camera`, `restart` (rejouer un set). `PhoneRemote` les exécute et renvoie l'état du match (`st|…`) et les annonces (`o|…`). Les petits boutons demandent un appui maintenu d'une demi-seconde, pour ne rien déclencher pendant un swing.
+
+### Déplacement par webcam
+
+- Pendant l'échange, si la webcam du PC voit le joueur bouger, ses pas de côté déplacent son personnage en largeur (`WebcamTracker`, `BodyTracker`, puis `RallyController.MovementTarget`). La profondeur, le placement au service et le retour après le point restent automatiques.
+- L'endroit où le joueur se tient au début de l'échange correspond à la place de son personnage : pas de centre à régler.
+- Le suivi compare les images successives (pas de reconnaissance du corps, aucune bibliothèque externe, rien n'est enregistré ni envoyé). Pendant un swing, signalé par le téléphone, la position est figée.
+- Sans mouvement devant la caméra pendant `webcamHoldSeconds`, en mode démonstration ou si la webcam est coupée (touche `C`, bouton « Caméra »), le placement redevient automatique.
+- Réglages : section « Joueur : déplacement par webcam » de `GameplayConfig` (`webcamSensitivity`, `webcamAssist`, `webcamMinCoverage`…). Aperçu en bas à gauche de l'écran (`UI/WebcamHud.cs`).
+- Vérifié avec des images simulées et une position injectée, pas encore avec une personne devant la caméra.
 
 ### Connexion du téléphone
 
@@ -78,7 +91,7 @@ Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de
 
 ### Outils
 
-- 60 tests EditMode dans `Assets/TennisPhone/Tests/EditMode` (détecteur, physique, frappe, IA, score).
+- 68 tests EditMode dans `Assets/TennisPhone/Tests/EditMode` (détecteur, physique, frappe, IA, score, lancer, suivi webcam).
 - Menu `TennisPhone > Simuler les frappes de l'adversaire` : taux de fautes de l'IA par niveau.
 - Menu `TennisPhone > Capture d'ecran du jeu` : image de la fenêtre Game dans `Temp/Captures`.
 - `Recordings/` (non versionné) contient les enregistrements de capteurs ; `SwingReplay` les rejoue dans le détecteur.
@@ -87,6 +100,8 @@ Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de
 
 - Régler l'équilibre en jouant avec l'iPhone : les échanges sont longs (personne ne marque de point gagnant direct) et le niveau normal est probablement trop facile.
 - Vérifier les revers liftés et slicés : aucune mesure réelle, le réglage est le miroir du coup droit.
+- Régler le déplacement par webcam avec le joueur devant la caméra (sensibilité, aide au placement, seuil de mouvement) : jamais essayé en vrai.
+- Vérifier sur l'iPhone les boutons de la page manette et le lancer selon la vitesse du geste : validés avec un faux téléphone seulement.
 - Écran d'accueil.
 - Écouter les sons en jeu et régler leurs volumes (`SoundPlayer`) : ils ont été vérifiés par le code, pas à l'oreille.
 - Accorder la page manette (`controller.html`) à la palette (tâche 13 de la charte).

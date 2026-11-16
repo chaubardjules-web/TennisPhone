@@ -208,6 +208,44 @@ namespace TennisPhone
         [Tooltip("Distance (m) derrière la ligne de fond où le joueur se replace.")]
         [Min(0f)] public float playerHomeDepth = 0.8f;
 
+        [Header("Joueur : déplacement par webcam")]
+        [Tooltip("Si coché, les pas de côté du joueur devant la webcam du PC déplacent son personnage pendant l'échange. "
+            + "La touche C et le bouton « Caméra » du téléphone le changent en jeu.")]
+        public bool webcamMovement = true;
+
+        [Tooltip("Largeur de court (m) parcourue quand le joueur traverse toute l'image de la webcam. "
+            + "Plus elle est grande, moins il faut bouger.")]
+        [Min(1f)] public float webcamSensitivity = 15f;
+
+        [Tooltip("Aide au placement (0 à 1) quand une balle arrive : 0, le joueur se place seul ; 1, le jeu le place entièrement.")]
+        [Range(0f, 1f)] public float webcamAssist = 0.25f;
+
+        [Tooltip("Distance (m) au-delà des lignes de côté jusqu'où le joueur peut aller.")]
+        [Min(0f)] public float webcamSideMargin = 2f;
+
+        [Tooltip("Écart de luminosité (0 à 255) entre deux images pour qu'un point de l'image compte comme en mouvement.")]
+        [Range(4f, 80f)] public float webcamMotionThreshold = 18f;
+
+        [Tooltip("Durée (s) pendant laquelle un point qui a bougé reste pris en compte.")]
+        [Min(0.05f)] public float webcamMemorySeconds = 0.5f;
+
+        [Tooltip("Part de l'image (0 à 1) qui doit avoir bougé pour mettre la position à jour : "
+            + "assez haute pour qu'un bras seul ne compte pas.")]
+        [Range(0.002f, 0.2f)] public float webcamMinCoverage = 0.03f;
+
+        [Tooltip("Temps de lissage (s) de la position vue par la webcam.")]
+        [Min(0f)] public float webcamSmoothingSeconds = 0.12f;
+
+        [Tooltip("Durée (s) sans mouvement devant la webcam au bout de laquelle le placement redevient automatique.")]
+        [Min(1f)] public float webcamHoldSeconds = 20f;
+
+        [Tooltip("Vitesse de rotation du téléphone (degrés par seconde) à partir de laquelle la position est figée : "
+            + "le bras bouge, pas le corps.")]
+        [Min(0f)] public float webcamFreezeRotation = 200f;
+
+        [Tooltip("Durée (s) pendant laquelle la position reste figée après un geste du bras.")]
+        [Min(0f)] public float webcamFreezeSeconds = 0.35f;
+
         [Header("Match")]
         [Tooltip("Nombre de jeux à gagner pour remporter le set.")]
         [Min(1)] public int gamesToWinSet = 3;
@@ -231,15 +269,27 @@ namespace TennisPhone
         [Tooltip("Hauteur (m) d'où la balle est lancée.")]
         [Min(0.5f)] public float tossReleaseHeight = 1.3f;
 
-        [Tooltip("Vitesse verticale (m/s) du lancer. Plus elle est grande, plus la balle monte et laisse de temps.")]
-        [Min(2f)] public float tossSpeed = 6.5f;
+        [Tooltip("Vitesse verticale (m/s) du lancer pour un lever lent du téléphone : la balle monte peu et retombe vite.")]
+        [Min(2f)] public float tossSpeedMin = 6.1f;
+
+        [Tooltip("Vitesse verticale (m/s) du lancer pour un lever vif : la balle monte haut et laisse plus de temps.")]
+        [Min(2f)] public float tossSpeedMax = 7.6f;
+
+        [Tooltip("Vitesse du lever du téléphone (degrés par seconde) qui donne le lancer le plus bas.")]
+        [Min(0f)] public float tossRateMin = 60f;
+
+        [Tooltip("Vitesse du lever du téléphone (degrés par seconde) qui donne le lancer le plus haut.")]
+        [Min(1f)] public float tossRateMax = 300f;
+
+        [Tooltip("Vigueur (0 à 1) du lancer fait avec le bouton du téléphone ou le clavier, et de celui de l'adversaire.")]
+        [Range(0f, 1f)] public float tossDefaultStrength = 0.35f;
 
         [Tooltip("Hauteur (m) sous laquelle un lancer non frappé est perdu et doit être refait.")]
         [Min(0.3f)] public float tossMinHeight = 1.5f;
 
         [Header("Service : frappe")]
-        [Tooltip("Délai idéal (s) entre le lancer et la frappe.")]
-        [Min(0.1f)] public float serveIdealDelay = 0.9f;
+        [Tooltip("Hauteur (m) où la balle lancée doit être frappée : l'instant idéal est celui où elle y redescend.")]
+        [Min(1f)] public float serveContactHeight = 3.1f;
 
         [Tooltip("Écart maximal (s) autour du délai idéal pour que le service parte.")]
         [Min(0.05f)] public float serveTimingWindow = 0.4f;

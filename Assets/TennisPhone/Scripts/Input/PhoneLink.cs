@@ -27,6 +27,9 @@ namespace TennisPhone
         /// <summary>Appelé sur le thread principal pour chaque mesure reçue.</summary>
         public event Action<SensorSample> SampleReceived;
 
+        /// <summary>Appelé sur le thread principal quand un bouton de la page manette est utilisé (« toss », « pause »…).</summary>
+        public event Action<string> CommandReceived;
+
         public bool IsServerRunning => server != null && server.IsRunning;
 
         /// <summary>Message d'erreur à afficher si le serveur n'a pas pu démarrer.</summary>
@@ -159,6 +162,11 @@ namespace TennisPhone
                 Debug.Log("[TennisPhone] " + message);
             }
 
+            while (server.Commands.TryDequeue(out string command))
+            {
+                CommandReceived?.Invoke(command);
+            }
+
             while (server.Samples.TryDequeue(out SensorSample sample))
             {
                 Latest = sample;
@@ -178,6 +186,12 @@ namespace TennisPhone
                     HasSample = false;
                 }
             }
+        }
+
+        /// <summary>Envoie une ligne de texte à la page manette (état du match, annonce).</summary>
+        public void Send(string line)
+        {
+            server?.Broadcast(line);
         }
 
         /// <summary>Demande au téléphone un retour haptique.</summary>

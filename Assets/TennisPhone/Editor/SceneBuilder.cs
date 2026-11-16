@@ -117,12 +117,16 @@ namespace TennisPhone.EditorTools
             RacketInput racketInput = game.AddComponent<RacketInput>();
             racketInput.SetConfig(config);
             EditorUtility.SetDirty(racketInput);
+            // Webcam éteinte au départ : RallyController l'allume si le déplacement par webcam est activé.
+            game.AddComponent<WebcamTracker>().enabled = false;
             game.AddComponent<RallyController>();
+            game.AddComponent<PhoneRemote>();
             MatchVisuals visuals = game.AddComponent<MatchVisuals>();
             visuals.Configure(CourtAmbiance, CourtSurface, light, EnsureShaderTemplates());
             EditorUtility.SetDirty(visuals);
             game.AddComponent<RallyHud>();
             game.AddComponent<SoundPlayer>();
+            game.AddComponent<WebcamHud>();
 
             Directory.CreateDirectory(Path.GetDirectoryName(CourtScenePath));
             EditorSceneManager.SaveScene(scene, CourtScenePath);

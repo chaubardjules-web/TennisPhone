@@ -158,8 +158,8 @@ namespace TennisPhone
 
         // ---------------------------------------------------------------- Annonces : enchaînement
 
-        bool BallLive => rally.CurrentPhase == RallyController.Phase.Toss
-            || (rally.CurrentPhase == RallyController.Phase.Rally && !rally.BallDead);
+        bool BallLive => !rally.Paused && (rally.CurrentPhase == RallyController.Phase.Toss
+            || (rally.CurrentPhase == RallyController.Phase.Rally && !rally.BallDead));
 
         void Update()
         {
@@ -517,26 +517,28 @@ namespace TennisPhone
             }
             else
             {
-                first = "Lève le téléphone : la balle part";
+                first = "Lève le téléphone : plus vite, plus haut";
             }
 
-            string second = input.HasPhone ? "Frappe quand elle est en haut" : "Clic quand elle est en haut";
+            string second = input.HasPhone ? "Frappe quand elle redescend dans le vert" : "Clic quand elle redescend dans le vert";
             DrawStep(new Rect(area.x + 16f, area.y + 10f, 330f, 56f), "1", first, !tossed);
             DrawStep(new Rect(area.x + 354f, area.y + 10f, 330f, 56f), "2", second, tossed);
 
             // Jauge de lancer : hauteur de la balle entre la main et le sommet. Le bon moment est
-            // près du sommet, dans la zone de droite.
+            // celui où la balle redescend dans la zone verte, placée à la hauteur de frappe : plus le
+            // lancer est haut, plus elle est loin du sommet et plus la balle met de temps à y revenir.
+            GameplayConfig config = rally.Config;
+            float span = Mathf.Max(rally.TossApexHeight - config.tossReleaseHeight, 0.1f);
+            float zone = Mathf.Clamp((config.serveContactHeight - config.tossReleaseHeight) / span, 0.09f, 0.91f);
             var track = new Rect(area.x + 40f, area.y + 76f, 620f, 14f);
             HudSkin.Panel(track, Palette.Piste, 7f);
-            HudSkin.Panel(new Rect(track.xMax - track.width * 0.18f, track.y, track.width * 0.18f, track.height), Palette.Menthe, 3f);
+            HudSkin.Panel(new Rect(track.x + (zone - 0.09f) * track.width, track.y, track.width * 0.18f, track.height), Palette.Menthe, 3f);
             HudSkin.Panel(new Rect(track.x, track.y, 3f, track.height), Palette.Creme, 1f);
             HudSkin.Panel(new Rect(track.xMax - 3f, track.y, 3f, track.height), Palette.Creme, 1f);
 
             if (tossed)
             {
-                GameplayConfig config = rally.Config;
-                float apex = config.tossSpeed * config.tossSpeed / (2f * Mathf.Max(config.gravity, 0.1f));
-                float height = Mathf.Clamp01((rally.Ball.Position.y - config.tossReleaseHeight) / Mathf.Max(apex, 0.1f));
+                float height = Mathf.Clamp01((rally.Ball.Position.y - config.tossReleaseHeight) / span);
                 HudSkin.Marker(track.x + height * track.width, track, 8f, 4f, Palette.Creme);
             }
         }
@@ -625,6 +627,7 @@ namespace TennisPhone
         {
             GUIStyle style = HudSkin.Text(HudFont.Medium, 18, TextAnchor.UpperLeft, true);
             string text = "D : niveau " + DifficultyName(rally.Difficulty) + " · T : démonstration" + (rally.AutoSwing ? " (activée)" : string.Empty) + "\n"
+                + "P : pause · C : caméra " + (rally.WebcamMovement ? "(activée)" : "(coupée)") + "\n"
                 + (input.HasPhone
                     ? "R : recentrer la raquette"
                     : "Souris : clic gauche coup droit, clic droit revers. Flèche haut : lancer.");

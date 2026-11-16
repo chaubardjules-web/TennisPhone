@@ -29,8 +29,11 @@ namespace TennisPhone
         /// <summary>Déclenché sur le thread principal à chaque swing, quelle que soit la source.</summary>
         public event Action<SwingEvent> Swung;
 
-        /// <summary>Déclenché quand le joueur fait le geste de lancer du service (téléphone levé, ou flèche haut).</summary>
-        public event Action Tossed;
+        /// <summary>
+        /// Déclenché quand le joueur fait le geste de lancer du service (téléphone levé, ou flèche haut).
+        /// La valeur est la vigueur du geste, de 0 (lever lent : lancer bas) à 1 (lever vif : lancer haut).
+        /// </summary>
+        public event Action<float> Tossed;
 
         /// <summary>
         /// Déclenché peu après Swung quand la fin du geste change l'effet du coup (slice).
@@ -52,6 +55,9 @@ namespace TennisPhone
 
         /// <summary>Vrai quand le téléphone est tenu assez bas pour qu'un lever déclenche le lancer.</summary>
         public bool IsTossArmed => tossDetector.IsArmed;
+
+        /// <summary>Vitesse du dernier lever du téléphone pour lancer la balle, en degrés par seconde.</summary>
+        public float LastTossRate { get; private set; }
 
         /// <summary>Vitesse lissée de la souris, en pixels par seconde.</summary>
         public float MouseSpeed => mouseSpeed;
@@ -120,9 +126,10 @@ namespace TennisPhone
 
             tossDetector.ArmElevation = config.tossArmElevation;
             tossDetector.RaiseElevation = config.tossRaiseElevation;
-            if (tossDetector.Process(frame.TopElevation))
+            if (tossDetector.Process(frame.TopElevation, frame.TimeSeconds))
             {
-                Tossed?.Invoke();
+                LastTossRate = tossDetector.RaiseRate;
+                Tossed?.Invoke(Mathf.InverseLerp(config.tossRateMin, config.tossRateMax, tossDetector.RaiseRate));
             }
 
             SwingUpdate update = detector.Process(frame, out SwingEvent swing);
@@ -157,17 +164,15 @@ namespace TennisPhone
         {
             UpdateMouseSpeed();
 
-            if (HasPhone && Input.GetKeyDown(KeyCode.R))
+            if (Input.GetKeyDown(KeyCode.R))
             {
-                // Recentre : la tête de raquette pointe vers le fond du court.
-                float yaw = DeviceOrientationMath.ToUnityRotation(link.Latest.Orientation).eulerAngles.y;
-                yawOffset = Quaternion.Euler(0f, -yaw, 0f);
+                Recenter();
             }
 
             if (Input.GetKeyDown(KeyCode.UpArrow))
             {
-                // Au clavier, la flèche haut lance la balle de service.
-                Tossed?.Invoke();
+                // Au clavier, la flèche haut lance la balle de service, à hauteur moyenne.
+                Tossed?.Invoke(config.tossDefaultStrength);
             }
 
             if (Input.GetMouseButtonDown(0))
@@ -182,6 +187,21 @@ namespace TennisPhone
             {
                 RaiseManualSwing(SwingSide.Forehand, config.keyboardPower);
             }
+        }
+
+        /// <summary>
+        /// Recentre la raquette : la direction où pointe le téléphone devient le fond du court
+        /// (touche R, ou bouton « Recentrer » du téléphone).
+        /// </summary>
+        public void Recenter()
+        {
+            if (!HasPhone)
+            {
+                return;
+            }
+
+            float yaw = DeviceOrientationMath.ToUnityRotation(link.Latest.Orientation).eulerAngles.y;
+            yawOffset = Quaternion.Euler(0f, -yaw, 0f);
         }
 
         void UpdateMouseSpeed()

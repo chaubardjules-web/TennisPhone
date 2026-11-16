@@ -43,6 +43,7 @@ namespace TennisPhone
 
         RacketInput input;
         PhoneLink link;
+        WebcamTracker webcam;
         GameplayConfig config;
         CourtDimensions court;
         BallSettings ballSettings;
@@ -65,8 +66,15 @@ namespace TennisPhone
         bool isServe;
         int serveBoxSide;
         int faultCount;
-        double tossTime;
+        double serveIdealTime;
         bool secondServePending;
+
+        bool paused;
+
+        // Déplacement par webcam : écart entre la position vue par la caméra et celle sur le court.
+        bool webcamMovement;
+        bool webcamAnchored;
+        float webcamOffsetX;
 
         // Balle à jouer par le camp qui reçoit : où et quand la frapper.
         bool hasContact;
@@ -184,6 +192,56 @@ namespace TennisPhone
         /// <summary>Mode démonstration : le jeu joue tout seul à la place du joueur (touche T).</summary>
         public bool AutoSwing { get; set; }
 
+        /// <summary>Match en pause : la balle et les joueurs sont figés, les gestes ignorés (touche P).</summary>
+        public bool Paused
+        {
+            get => paused;
+            set
+            {
+                if (paused == value)
+                {
+                    return;
+                }
+
+                paused = value;
+                if (paused)
+                {
+                    Announce(MessageTone.Neutral, "PAUSE", "Bouton Reprendre du téléphone, ou touche P", 2f, -1, true);
+                }
+                else
+                {
+                    Announce(MessageTone.Neutral, "REPRISE", string.Empty, 0.8f);
+                }
+            }
+        }
+
+        /// <summary>Vrai si le joueur veut se déplacer avec la webcam (touche C, ou bouton du téléphone).</summary>
+        public bool WebcamMovement
+        {
+            get => webcamMovement;
+            set
+            {
+                webcamMovement = value && webcam != null;
+                webcamAnchored = false;
+                if (webcam != null)
+                {
+                    // La caméra ne tourne que si elle sert.
+                    webcam.enabled = webcamMovement;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Vrai quand la webcam voit le joueur et peut le déplacer ; sinon le placement est automatique.
+        /// </summary>
+        public bool WebcamActive => webcamMovement && !AutoSwing && webcam != null && webcam.IsRunning && webcam.HasTarget;
+
+        /// <summary>Vigueur du dernier lancer du joueur, de 0 (bas) à 1 (haut).</summary>
+        public float LastTossStrength { get; private set; }
+
+        /// <summary>Hauteur (m) du sommet du lancer du joueur : celui en cours, sinon celui d'un lancer moyen.</summary>
+        public float TossApexHeight { get; private set; }
+
         public Vector3 PlayerPosition => playerPosition;
 
         /// <summary>Vrai si le joueur est à sa place de service et peut lancer la balle.</summary>
@@ -199,7 +257,7 @@ namespace TennisPhone
             {
                 if (phase == Phase.Toss && PlayerServing)
                 {
-                    return (float)(tossTime + config.serveIdealDelay - simTime);
+                    return (float)(serveIdealTime - simTime);
                 }
 
                 if (phase == Phase.Rally && hasContact && lastHitter == Side.Opponent)
@@ -220,6 +278,7 @@ namespace TennisPhone
         {
             input = GetComponent<RacketInput>();
             link = GetComponent<PhoneLink>();
+            webcam = GetComponent<WebcamTracker>();
         }
 
         void Start()
@@ -228,6 +287,7 @@ namespace TennisPhone
             court = config.ToCourt();
             ballSettings = config.ToBallSettings();
             Difficulty = config.aiDifficulty;
+            WebcamMovement = config.webcamMovement;
 
             playerPosition = HomePosition(Side.Player);
             playerTarget = playerPosition;
@@ -282,12 +342,27 @@ namespace TennisPhone
 
             if (Input.GetKeyDown(KeyCode.D))
             {
-                Difficulty = (AiDifficulty)(((int)Difficulty + 1) % 3);
+                CycleDifficulty();
             }
 
-            if (phase == Phase.SetOver && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
             {
-                StartSet();
+                RestartSet();
+            }
+
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                Paused = !Paused;
+            }
+
+            if (Input.GetKeyDown(KeyCode.C))
+            {
+                WebcamMovement = !WebcamMovement;
+            }
+
+            if (paused)
+            {
+                return;
             }
 
             accumulator += Mathf.Min(Time.deltaTime, 0.1f);
@@ -305,7 +380,51 @@ namespace TennisPhone
                 UpdateAutoPlay();
             }
 
-            playerPosition = Vector3.MoveTowards(playerPosition, playerTarget, config.playerMoveSpeed * Time.deltaTime);
+            playerPosition = Vector3.MoveTowards(playerPosition, MovementTarget(), config.playerMoveSpeed * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Point vers lequel le joueur court. Le placement est automatique, sauf pendant l'échange
+        /// quand la webcam voit le joueur : ses pas de côté déplacent alors son personnage en largeur.
+        /// La profondeur reste automatique.
+        /// </summary>
+        Vector3 MovementTarget()
+        {
+            if (phase != Phase.Rally || !WebcamActive)
+            {
+                webcamAnchored = false;
+                return playerTarget;
+            }
+
+            float seen = webcam.PlayerX * config.webcamSensitivity;
+            if (!webcamAnchored)
+            {
+                // L'endroit où le joueur se tient au début de l'échange correspond à la place de son personnage.
+                webcamAnchored = true;
+                webcamOffsetX = playerPosition.x - seen;
+            }
+
+            bool receiving = hasContact && !ballDead && lastHitter == Side.Opponent;
+            if (receiving)
+            {
+                // La raquette passe du côté de la balle, et la place idéale suit.
+                float gap = contactPoint.x - playerPosition.x;
+                if (Mathf.Abs(gap) > 0.2f)
+                {
+                    hittingSide = gap >= 0f ? 1f : -1f;
+                }
+
+                playerTarget.x = contactPoint.x - hittingSide * config.playerSideOffset;
+            }
+
+            // Au bord, l'écart glisse : il suffit de revenir d'un pas pour repartir dans l'autre sens.
+            float limit = court.HalfWidth + config.webcamSideMargin;
+            float x = Mathf.Clamp(webcamOffsetX + seen, -limit, limit);
+            webcamOffsetX = x - seen;
+
+            Vector3 target = playerTarget;
+            target.x = Mathf.Lerp(x, playerTarget.x, receiving ? config.webcamAssist : 0f);
+            return target;
         }
 
         // ---------------------------------------------------------------- Déroulement
@@ -331,6 +450,10 @@ namespace TennisPhone
             hasContact = false;
             secondServePending = false;
             rallyShots = 0;
+
+            // Avant le lancer, la jauge du HUD montre un lancer moyen.
+            float tossSpeed = Mathf.Lerp(config.tossSpeedMin, config.tossSpeedMax, config.tossDefaultStrength);
+            TossApexHeight = config.tossReleaseHeight + tossSpeed * tossSpeed / (2f * Mathf.Max(config.gravity, 0.1f));
             ServePrepared?.Invoke();
             opponent.StopTracking();
 
@@ -372,13 +495,13 @@ namespace TennisPhone
                     if (Server == Side.Opponent && elapsed >= config.aiServeDelay
                         && Vector3.Distance(opponent.Position, opponentSpot) <= InPlaceDistance)
                     {
-                        StartToss(Side.Opponent);
+                        StartToss(Side.Opponent, config.tossDefaultStrength);
                     }
 
                     break;
 
                 case Phase.Toss:
-                    if (Server == Side.Opponent && simTime >= tossTime + config.serveIdealDelay)
+                    if (Server == Side.Opponent && simTime >= serveIdealTime)
                     {
                         OpponentServe();
                     }
@@ -390,7 +513,7 @@ namespace TennisPhone
                         phaseTime = simTime;
                         if (Server == Side.Player)
                         {
-                            Announce(MessageTone.Warning, "LANCER À REFAIRE", "Frappe la balle quand elle est en haut", 1.6f);
+                            Announce(MessageTone.Warning, "LANCER À REFAIRE", "Frappe la balle quand elle redescend", 1.6f);
                         }
                     }
 
@@ -435,8 +558,23 @@ namespace TennisPhone
 
         // ---------------------------------------------------------------- Service
 
-        void OnTossGesture()
+        void OnTossGesture(float strength)
         {
+            RequestToss(strength);
+        }
+
+        /// <summary>
+        /// Lance la balle de service du joueur s'il est en place : geste, bouton du téléphone ou clavier.
+        /// Set terminé : relance un set.
+        /// </summary>
+        /// <param name="strength">Vigueur du lancer, de 0 (bas) à 1 (haut).</param>
+        public void RequestToss(float strength)
+        {
+            if (paused)
+            {
+                return;
+            }
+
             if (phase == Phase.SetOver)
             {
                 StartSet();
@@ -445,19 +583,44 @@ namespace TennisPhone
 
             if (PlayerReadyToToss)
             {
-                StartToss(Side.Player);
+                StartToss(Side.Player, strength);
             }
         }
 
-        void StartToss(Side server)
+        /// <summary>Rejoue un set, une fois le précédent terminé.</summary>
+        public void RestartSet()
         {
+            if (phase != Phase.SetOver)
+            {
+                return;
+            }
+
+            paused = false;
+            StartSet();
+        }
+
+        /// <summary>Passe au niveau suivant de l'adversaire : facile, normal, difficile, puis de nouveau facile.</summary>
+        public void CycleDifficulty()
+        {
+            Difficulty = (AiDifficulty)(((int)Difficulty + 1) % 3);
+        }
+
+        /// <param name="strength">Vigueur du lancer, de 0 (bas) à 1 (haut) : elle règle la hauteur de la balle.</param>
+        void StartToss(Side server, float strength)
+        {
+            strength = Mathf.Clamp01(strength);
+            if (server == Side.Player)
+            {
+                LastTossStrength = strength;
+            }
+
             Vector3 serverPosition = server == Side.Player ? playerPosition : opponent.Position;
             float towardNet = -(int)server;
 
             ball = new BallState
             {
                 Position = serverPosition + new Vector3(0.25f * towardNet, config.tossReleaseHeight, 0.35f * towardNet),
-                Velocity = new Vector3(0f, config.tossSpeed, 0f),
+                Velocity = new Vector3(0f, Mathf.Lerp(config.tossSpeedMin, config.tossSpeedMax, strength), 0f),
             };
 
             ballActive = true;
@@ -465,10 +628,38 @@ namespace TennisPhone
             lastHitter = server;
             bounceCount = 0;
             launchTime = simTime;
-            tossTime = simTime;
+            serveIdealTime = simTime + TimeToServeHeight(ball, out float apex);
+            if (server == Side.Player)
+            {
+                TossApexHeight = apex;
+            }
+
             phase = Phase.Toss;
             phaseTime = simTime;
             TossStarted?.Invoke(server == Side.Player);
+        }
+
+        /// <summary>
+        /// Temps (s) que met la balle lancée pour redescendre à la hauteur de frappe du service :
+        /// c'est l'instant idéal pour la frapper. Un lancer plus haut laisse donc plus de temps.
+        /// Si elle ne monte pas jusque-là, l'instant idéal est son sommet.
+        /// </summary>
+        double TimeToServeHeight(BallState state, out float apex)
+        {
+            float time = 0f;
+            apex = state.Position.y;
+            while (time < 4f)
+            {
+                BallPhysics.Step(ref state, BallPhysics.TimeStep, ballSettings, court);
+                time += BallPhysics.TimeStep;
+                apex = Mathf.Max(apex, state.Position.y);
+                if (state.Velocity.y <= 0f && state.Position.y <= config.serveContactHeight)
+                {
+                    break;
+                }
+            }
+
+            return time;
         }
 
         /// <summary>Le serveur frappe la balle lancée vers le carré de service opposé.</summary>
@@ -877,6 +1068,11 @@ namespace TennisPhone
 
         void OnSwing(SwingEvent swing)
         {
+            if (paused)
+            {
+                return;
+            }
+
             switch (phase)
             {
                 case Phase.SetOver:
@@ -895,7 +1091,7 @@ namespace TennisPhone
                     if (Server == Side.Player)
                     {
                         Announce(MessageTone.Warning, "LANCE D'ABORD LA BALLE",
-                            "Baisse le téléphone, puis lève-le vers le haut (ou flèche haut)", 1.8f);
+                            "Bouton du téléphone, ou baisse-le puis lève-le vers le haut", 1.8f);
                     }
 
                     return;
@@ -909,7 +1105,7 @@ namespace TennisPhone
         void PlayerServe(SwingEvent swing)
         {
             double swingTime = simTime - swing.AgeSeconds;
-            float timing = (float)(swingTime - (tossTime + config.serveIdealDelay));
+            float timing = (float)(swingTime - serveIdealTime);
             if (Mathf.Abs(timing) > config.serveTimingWindow)
             {
                 Whiff((timing < 0f ? "Trop tôt de " : "Trop tard de ")
@@ -987,6 +1183,11 @@ namespace TennisPhone
         /// <summary>La fin du geste a précisé l'effet (slice) : la trajectoire est recalculée en vol.</summary>
         void OnSwingRefined(SwingEvent swing)
         {
+            if (paused)
+            {
+                return;
+            }
+
             bool stillFlying = phase == Phase.Rally && ballActive && !ballDead && lastHitter == Side.Player
                 && bounceCount == 0 && !LastHitWasServe;
             if (!stillFlying || swing.Id != lastHitSwingId || simTime - lastHitTime > RefineWindow || ball.Position.z > -0.5f)
@@ -1021,7 +1222,7 @@ namespace TennisPhone
         {
             if (PlayerReadyToToss && simTime - phaseTime >= 1.0)
             {
-                StartToss(Side.Player);
+                StartToss(Side.Player, Random.value);
                 autoSwingPlanned = false;
                 return;
             }
@@ -1034,7 +1235,7 @@ namespace TennisPhone
                 return;
             }
 
-            double ideal = serving ? tossTime + config.serveIdealDelay : contactTime;
+            double ideal = serving ? serveIdealTime : contactTime;
             float window = serving ? config.serveTimingWindow : config.timingWindow;
             if (!autoSwingPlanned)
             {

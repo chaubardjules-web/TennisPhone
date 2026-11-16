@@ -52,9 +52,9 @@
   #link.error { color: var(--bad); }
 
   /* Petits boutons : appui maintenu, pour ne rien déclencher par accident pendant un swing. */
-  #tools { display: flex; gap: 8px; }
+  #tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .hold {
-    position: relative; flex: 1; height: 54px; border-radius: 12px; overflow: hidden;
+    position: relative; height: 46px; border-radius: 12px; overflow: hidden;
     background: var(--panel-2); font-size: 15px; font-weight: 600;
   }
   .hold .fill { position: absolute; inset: 0; background: var(--blue); transform: scaleX(0); transform-origin: left; }
@@ -106,6 +106,7 @@
     <button class="hold" type="button" data-action="recenter"><span class="fill"></span><span>Recentrer</span></button>
     <button class="hold" type="button" data-action="pause"><span class="fill"></span><span id="pauseLabel">Pause</span></button>
     <button class="hold" type="button" data-action="level"><span class="fill"></span><span id="levelLabel">Niveau</span></button>
+    <button class="hold" type="button" data-action="camera"><span class="fill"></span><span id="cameraLabel">Caméra</span></button>
   </div>
 
   <div id="message">
@@ -202,7 +203,7 @@
     } else if (data.charAt(0) === 'v') {
       haptic(parseInt(data.split(',')[1], 10) || 30);
     } else if (data.indexOf('st|') === 0) {
-      // État du match : st|phase|service|prêt|pause|niveau|jeux toi|jeux adv.|points toi|points adv.|serveur|fautes
+      // État du match : st|phase|service|prêt|pause|niveau|jeux toi|jeux adv.|points toi|points adv.|serveur|fautes|caméra
       var f = data.split('|');
       if (game && game.phase === 'SetOver' && f[1] !== 'SetOver') {
         outcome = null; // nouveau set : l'annonce du set précédent n'a plus lieu d'être
@@ -210,7 +211,7 @@
       game = {
         phase: f[1], serving: f[2] === '1', ready: f[3] === '1', paused: f[4] === '1', level: f[5],
         gamesPlayer: f[6], gamesOpponent: f[7], pointsPlayer: f[8], pointsOpponent: f[9],
-        server: f[10], faults: parseInt(f[11], 10) || 0
+        server: f[10], faults: parseInt(f[11], 10) || 0, camera: f[12] || '0'
       };
       render();
     } else if (data.indexOf('o|') === 0) {
@@ -401,6 +402,9 @@
     $('rowOpponent').className = 'row' + (game.server === '1' ? ' serving' : '');
     $('pauseLabel').textContent = game.paused ? 'Reprendre' : 'Pause';
     $('levelLabel').textContent = 'Niveau : ' + levelName(game.level);
+    // Caméra : 0 éteinte, 1 elle déplace le joueur, 2 allumée mais elle ne voit personne bouger.
+    $('cameraLabel').textContent = game.camera === '1' ? 'Caméra : oui'
+      : (game.camera === '2' ? 'Caméra : te cherche' : 'Caméra : non');
 
     var second = game.faults > 0 ? 'Deuxième balle' : '';
     if (game.paused) {
@@ -410,14 +414,14 @@
       showOutcomeOr('Set terminé', game.gamesPlayer + ' jeux à ' + game.gamesOpponent + '.');
       setAction('restart', 'REJOUER UN SET', 'Maintenez appuyé', 'live');
     } else if (game.phase === 'PreServe' && game.serving) {
-      showOutcomeOr('À toi de servir', second);
+      showOutcomeOr('À toi de servir', second || 'Bouton, ou lève le téléphone : plus vite tu le lèves, plus la balle monte.');
       if (game.ready) {
         setAction('toss', 'LANCER LA BALLE', 'Puis frappe d\'un swing', 'live toss');
       } else {
         setAction('', 'En place…', '', '');
       }
     } else if (game.phase === 'Toss' && game.serving) {
-      setMessage('Frappe !', 'Swing quand la balle est en haut.', 'accent');
+      setMessage('Frappe !', 'Swing quand la balle redescend.', 'accent');
       setAction('', 'FRAPPE !', '', 'hit');
     } else if (game.phase === 'PreServe') {
       showOutcomeOr('L\'adversaire sert', second);
