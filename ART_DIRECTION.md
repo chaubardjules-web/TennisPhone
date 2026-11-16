@@ -736,6 +736,19 @@ Ce qui reste de la section 4 : les bras reliés au corps (pas de mains détaché
 
 **Public (demande de l'utilisateur).** Deux sièges sur trois des tribunes du stade de jour sont occupés par un spectateur assis, dans le même style, en trois formes : corps (capsule), tête et cheveux (sphères). Habits tirés dans la palette (jamais de jaune ni de vert), cinq teintes de peau, six couleurs de cheveux, graine 7. Le public sautille pendant 1,4 s à la fin de chaque point (`DecorAnimator.Cheer`). Les matériaux partagés activent l'instanciation GPU : environ 2 000 objets pour 400 appels de dessin. Le soir des lampions reste sans public, comme dans la section 1.
 
+**HUD : écarts avec la section 7.**
+
+- L'ardoise de score est en haut au centre, son étiquette de service juste dessous. Les annonces descendent donc à y = 208 (sous-titre à y = 308). Un titre ou un sous-titre trop long est écrit plus petit (jamais sous 18 px) ; le sous-titre ne dépasse pas 700 px de large.
+- L'aide est en haut à gauche (330 px de large) : en bas à gauche, elle passait sous la barre de timing.
+- Toutes les informations de l'ancien HUD sont gardées, y compris celles que la section 7.8 retirait : la cadence des capteurs (dans la pastille « Raquette connectée ») et le nombre de frappes de l'échange (pastille en bas à gauche). Le résumé du swing garde l'écart en millisecondes.
+- Les coins arrondis sont dessinés par `GUI.DrawTexture` (paramètre `borderRadius`), sans texture à neuf tranches.
+- Police Baloo 2 non importée : le projet n'admet que des primitives et des matériaux Unity, et aucun fichier tiers n'a été téléchargé. `HudSkin` charge les trois fichiers de la section 7.2 s'ils sont posés dans `Resources/Fonts/` ; sinon la police par défaut d'Unity est utilisée, en gras pour les deux graisses fortes.
+- Étapes du service en SemiBold 20 sur deux lignes : en 22 px sur une ligne, les textes ne tiennent pas dans 330 px.
+
+**Sons : écarts avec la section 8.** Un set perdu joue le motif « jeu perdu », pas la montée du set. Une balle dehors joue « faute » sans le motif du point ; une balle dans le filet ne joue que le son du filet. La bande du filet sonne quand la balle touche à moins de 15 cm du haut. Volume général réglable sur `SoundPlayer` (0,8 par défaut).
+
+**Non fait.** Tâche 13 (page manette aux couleurs de la palette) : une autre session modifiait `controller.html` au même moment.
+
 **Éclairage corrigé (les deux ambiances).** Les valeurs de la section 5.7 surexposaient la palette : le shader `Standard` additionne le soleil et la lumière d'ambiance, et le sol recevait 1,5 fois sa couleur (court turquoise vif au lieu de sarcelle). Valeurs retenues, pour que la somme reçue par le sol reste proche de 1 :
 
 | Réglage | Soir | Jour |

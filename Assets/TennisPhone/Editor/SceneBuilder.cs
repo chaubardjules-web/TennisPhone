@@ -122,6 +122,7 @@ namespace TennisPhone.EditorTools
             visuals.Configure(CourtAmbiance, CourtSurface, light, EnsureShaderTemplates());
             EditorUtility.SetDirty(visuals);
             game.AddComponent<RallyHud>();
+            game.AddComponent<SoundPlayer>();
 
             Directory.CreateDirectory(Path.GetDirectoryName(CourtScenePath));
             EditorSceneManager.SaveScene(scene, CourtScenePath);

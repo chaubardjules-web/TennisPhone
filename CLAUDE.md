@@ -53,7 +53,18 @@ Deux enregistrements des capteurs de l'iPhone du joueur ont servi à régler la 
 - `SwingLab.unity` : raquette seule, jauges du swing, enregistreur de capteurs (touche G : enregistrement guidé).
 - `SensorDebug.unity` : connexion du téléphone et capteurs bruts.
 
-Les scènes sont construites par le code : menu `TennisPhone` de l'éditeur (`Assets/TennisPhone/Editor/SceneBuilder.cs`). Tout le décor et les personnages sont créés au lancement par `CourtBuilder` et `RallyController`.
+Les scènes sont construites par le code : menu `TennisPhone` de l'éditeur (`Assets/TennisPhone/Editor/SceneBuilder.cs`). Tout le décor et les personnages sont créés au lancement, en formes simples.
+
+### Habillage (ART_DIRECTION.md)
+
+La charte est dans `ART_DIRECTION.md` ; sa section 9 bis dit ce qui a été retenu à l'implémentation.
+
+- **Deux ambiances**, champ `Ambiance` du composant `MatchVisuals` (objet `Jeu`) : `Jour` (stade en bois avec public, gazon, ciel bleu ; par défaut) et `Soir` (soir des lampions, court sarcelle). Champ `Surface` : `Gazon` ou `Sarcelle`.
+- `RallyController` ne dessine rien. Il expose des événements (frappe, rebond, filet, swing dans le vide, lancer, fin de point, annonces) ; `MatchVisuals` (court, décor, personnages, balle, effets), `RallyHud` (HUD) et `SoundPlayer` (sons) s'y abonnent.
+- Couleurs et matériaux partagés : `Scripts/Art/Palette.cs`. Lumière et brume : `Atmosphere.cs`. Décor : `Court/DecorBuilder.cs`. Personnages : `Player/CharacterModel.cs`. Effets de frappe : `Game/HitEffects.cs`. HUD : `UI/HudSkin.cs` et `DebugUI/RallyHud.cs`.
+- Sons : fabriqués par le code au lancement (`Audio/SoundSynth.cs`), aucun fichier audio.
+- Police du HUD : celle d'Unity par défaut. Si des fichiers `Baloo2-Medium`, `Baloo2-SemiBold` et `Baloo2-ExtraBold` sont posés dans `Assets/TennisPhone/Resources/Fonts/`, ils sont utilisés.
+- Aucun personnage, décor, logo ou interface d'un jeu existant : les personnages et le stade sont des dessins originaux.
 
 ### Touches (scène du court)
 
@@ -69,10 +80,13 @@ Clic gauche : coup droit. Clic droit : revers. Flèche haut : lancer la balle de
 
 - 60 tests EditMode dans `Assets/TennisPhone/Tests/EditMode` (détecteur, physique, frappe, IA, score).
 - Menu `TennisPhone > Simuler les frappes de l'adversaire` : taux de fautes de l'IA par niveau.
+- Menu `TennisPhone > Capture d'ecran du jeu` : image de la fenêtre Game dans `Temp/Captures`.
 - `Recordings/` (non versionné) contient les enregistrements de capteurs ; `SwingReplay` les rejoue dans le détecteur.
 
 ### Reste à faire
 
 - Régler l'équilibre en jouant avec l'iPhone : les échanges sont longs (personne ne marque de point gagnant direct) et le niveau normal est probablement trop facile.
 - Vérifier les revers liftés et slicés : aucune mesure réelle, le réglage est le miroir du coup droit.
-- Habillage graphique original, sons, écran d'accueil.
+- Écran d'accueil.
+- Écouter les sons en jeu et régler leurs volumes (`SoundPlayer`) : ils ont été vérifiés par le code, pas à l'oreille.
+- Accorder la page manette (`controller.html`) à la palette (tâche 13 de la charte).

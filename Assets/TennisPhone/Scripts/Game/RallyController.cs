@@ -14,16 +14,6 @@ namespace TennisPhone
     [RequireComponent(typeof(RacketInput))]
     public sealed class RallyController : MonoBehaviour
     {
-        public enum Outcome
-        {
-            None,
-            PointWon,
-            PointLost,
-            Fault,
-            Whiff,
-            Info,
-        }
-
         public enum Phase
         {
             /// <summary>Les joueurs se placent ; le serveur n'a pas encore lancé la balle.</summary>
@@ -162,15 +152,6 @@ namespace TennisPhone
 
         /// <summary>Nombre de fautes de service sur le point en cours (0 ou 1).</summary>
         public int FaultCount => faultCount;
-
-        public Outcome LastOutcome { get; private set; }
-
-        /// <summary>Instant (Time.unscaledTime) du dernier message affiché.</summary>
-        public float LastOutcomeTime { get; private set; } = -10f;
-
-        public string LastOutcomeTitle { get; private set; } = string.Empty;
-
-        public string LastOutcomeDetail { get; private set; } = string.Empty;
 
         public bool HasLastHit { get; private set; }
 
@@ -334,8 +315,6 @@ namespace TennisPhone
             score = new MatchScore(config.gamesToWinSet, config.setRequiresTwoGameLead, config.playerServesFirst ? 0 : 1);
             LongestRally = 0;
             faultCount = 0;
-            SetOutcome(Outcome.Info, PlayerServing ? "À TOI DE SERVIR" : "L'ADVERSAIRE SERT",
-                "Premier à " + config.gamesToWinSet + " jeux.");
             Announce(MessageTone.Neutral, PlayerServing ? "À TOI DE SERVIR" : "L'ADVERSAIRE SERT",
                 "Premier à " + config.gamesToWinSet + " jeux", 1.6f);
             BeginServe();
@@ -411,7 +390,6 @@ namespace TennisPhone
                         phaseTime = simTime;
                         if (Server == Side.Player)
                         {
-                            SetOutcome(Outcome.Info, "LANCER À REFAIRE", "Frappe la balle quand elle est en haut.");
                             Announce(MessageTone.Warning, "LANCER À REFAIRE", "Frappe la balle quand elle est en haut", 1.6f);
                         }
                     }
@@ -490,7 +468,6 @@ namespace TennisPhone
             tossTime = simTime;
             phase = Phase.Toss;
             phaseTime = simTime;
-            SetOutcome(Outcome.None, string.Empty, string.Empty);
             TossStarted?.Invoke(server == Side.Player);
         }
 
@@ -573,7 +550,6 @@ namespace TennisPhone
                 return;
             }
 
-            SetOutcome(Outcome.Fault, "FAUTE", detail + " Deuxième balle.");
             Announce(MessageTone.Bad, "FAUTE", Trim(detail) + " · 2e service", 1.4f);
             ServiceFaulted?.Invoke();
             ballDead = true;
@@ -724,25 +700,6 @@ namespace TennisPhone
             isServe = false;
 
             bool won = winner == Side.Player;
-            string title;
-            if (scoreEvent == ScoreEvent.Set)
-            {
-                title = won ? "SET GAGNÉ" : "SET PERDU";
-                detail += " " + score.Games(0) + " jeux à " + score.Games(1) + ".";
-            }
-            else if (scoreEvent == ScoreEvent.Game)
-            {
-                title = won ? "JEU POUR TOI" : "JEU POUR L'ADVERSAIRE";
-                detail += " " + score.Games(0) + " jeux à " + score.Games(1) + ".";
-            }
-            else
-            {
-                title = won ? "POINT POUR TOI" : "POINT PERDU";
-                detail += " " + score.Call() + ".";
-            }
-
-            SetOutcome(won ? Outcome.PointWon : Outcome.PointLost, title, detail);
-
             ballDead = true;
             hasContact = false;
             secondServePending = false;
@@ -937,8 +894,6 @@ namespace TennisPhone
                 case Phase.PreServe:
                     if (Server == Side.Player)
                     {
-                        SetOutcome(Outcome.Whiff, "LANCE D'ABORD LA BALLE",
-                            "Baisse le téléphone, puis lève-le vers le haut (ou flèche haut).");
                         Announce(MessageTone.Warning, "LANCE D'ABORD LA BALLE",
                             "Baisse le téléphone, puis lève-le vers le haut (ou flèche haut)", 1.8f);
                     }
@@ -996,7 +951,6 @@ namespace TennisPhone
             RecordPlayerHit(swing, timing, config.timingWindow, false);
             isServe = false;
             ApplyPlayerShot(swing);
-            SetOutcome(Outcome.None, string.Empty, string.Empty);
             OnBallHit(Side.Player);
             BallHit?.Invoke(new HitInfo
             {
@@ -1164,14 +1118,6 @@ namespace TennisPhone
 
         // ---------------------------------------------------------------- Annonces
 
-        void SetOutcome(Outcome outcome, string title, string detail)
-        {
-            LastOutcome = outcome;
-            LastOutcomeTitle = title;
-            LastOutcomeDetail = detail;
-            LastOutcomeTime = Time.unscaledTime;
-        }
-
         void Announce(MessageTone tone, string title, string subtitle, float duration, int side = -1, bool persistent = false)
         {
             Announced?.Invoke(new Announcement
@@ -1188,7 +1134,6 @@ namespace TennisPhone
         /// <summary>Swing du joueur qui ne touche pas de balle.</summary>
         void Whiff(string detail)
         {
-            SetOutcome(Outcome.Whiff, "DANS LE VIDE", detail);
             Whiffed?.Invoke(detail);
         }
 
