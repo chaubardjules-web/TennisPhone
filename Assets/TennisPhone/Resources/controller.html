@@ -2,59 +2,135 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Raquette</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --bg: #10151c; --panel: #1a232e; --panel-2: #263341; --text: #eef2f6; --muted: #a9b6c4;
+    --accent: #ffd94d; --blue: #2f80ed; --good: #6fdc8c; --bad: #ff8f7a;
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; }
   body {
-    background: #10151c; color: #eef2f6;
+    background: var(--bg); color: var(--text);
     font: 17px/1.4 -apple-system, system-ui, "Segoe UI", sans-serif;
-    display: flex; align-items: center; justify-content: center;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    touch-action: none; overscroll-behavior: none; overflow: hidden;
+  }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; border: 0; }
+
+  /* Écran d'accueil : activation des capteurs. */
+  #setup {
+    height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 24px 20px; text-align: center;
-    -webkit-user-select: none; user-select: none; touch-action: manipulation;
-    overscroll-behavior: none;
   }
-  main { width: 100%; max-width: 420px; }
-  h1 { font-size: 30px; margin: 0 0 6px; }
-  #status { min-height: 3em; margin: 0 0 22px; color: #a9b6c4; }
-  #status.ok { color: #6fdc8c; }
-  #status.error { color: #ff8f7a; }
-  button {
-    width: 100%; border: 0; border-radius: 18px; padding: 22px 16px;
-    font: inherit; font-size: 21px; font-weight: 700;
-    background: #2f80ed; color: #fff;
+  #setup h1 { font-size: 30px; margin: 0 0 6px; }
+  #status { min-height: 3em; margin: 0 0 22px; color: var(--muted); max-width: 420px; }
+  #status.error { color: var(--bad); }
+  #setup button {
+    width: 100%; max-width: 420px; border-radius: 18px; padding: 22px 16px;
+    font-size: 21px; font-weight: 700; background: var(--blue); color: #fff;
   }
-  button:active { background: #2567c2; }
-  button.secondary { margin-top: 12px; background: #263341; font-size: 17px; font-weight: 600; padding: 16px; }
-  #live { margin-top: 22px; font: 14px/1.6 ui-monospace, Menlo, Consolas, monospace; color: #a9b6c4; text-align: left; white-space: pre; }
+  #setup button.secondary { margin-top: 12px; background: var(--panel-2); font-size: 17px; font-weight: 600; padding: 16px; }
+
+  /* Écran de jeu. */
+  #play {
+    height: 100%; display: flex; flex-direction: column; gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  #score { background: var(--panel); border-radius: 14px; padding: 8px 12px; }
+  .row { display: flex; align-items: center; gap: 8px; height: 34px; font-weight: 700; font-size: 19px; }
+  .row .dot { width: 10px; height: 10px; border-radius: 50%; background: transparent; flex: none; }
+  .row.serving .dot { background: var(--accent); }
+  .row .name { flex: 1; text-align: left; }
+  .row .games { width: 34px; text-align: center; font-size: 22px; }
+  .row .points { width: 58px; text-align: center; font-size: 22px; background: rgba(255,255,255,0.1); border-radius: 8px; }
+  #link { margin-top: 4px; font-size: 12.5px; color: var(--muted); text-align: center; }
+  #link.error { color: var(--bad); }
+
+  /* Petits boutons : appui maintenu, pour ne rien déclencher par accident pendant un swing. */
+  #tools { display: flex; gap: 8px; }
+  .hold {
+    position: relative; flex: 1; height: 54px; border-radius: 12px; overflow: hidden;
+    background: var(--panel-2); font-size: 15px; font-weight: 600;
+  }
+  .hold .fill { position: absolute; inset: 0; background: var(--blue); transform: scaleX(0); transform-origin: left; }
+  .hold.pressing .fill { transform: scaleX(1); transition: transform var(--hold-ms, 450ms) linear; }
+  .hold span { position: relative; }
+  .hold.done { background: var(--good); color: #0b1a10; }
+
+  #message { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 6px; }
+  #title { font-size: 30px; font-weight: 800; line-height: 1.15; }
+  #title.good { color: var(--good); }
+  #title.bad { color: var(--bad); }
+  #title.accent { color: var(--accent); }
+  #detail { margin-top: 8px; color: var(--muted); font-size: 16px; }
+
+  /* Grand bouton du bas : son rôle dépend du moment du match. */
+  #action {
+    position: relative; overflow: hidden; height: 36vh; min-height: 150px; border-radius: 22px;
+    font-size: 30px; font-weight: 800; letter-spacing: 0.5px;
+    background: var(--panel); color: var(--muted);
+  }
+  #action .fill { position: absolute; inset: 0; background: rgba(255,255,255,0.22); transform: scaleX(0); transform-origin: left; }
+  #action.pressing .fill { transform: scaleX(1); transition: transform var(--hold-ms, 450ms) linear; }
+  #action span { position: relative; }
+  #action.live { background: var(--blue); color: #fff; }
+  #action.live.toss { background: var(--accent); color: #2a2206; }
+  #action.hit { background: #1f3b26; color: var(--good); }
+  #action small { display: block; font-size: 15px; font-weight: 600; opacity: 0.85; margin-top: 6px; letter-spacing: 0; }
+
   #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.18s ease-out; }
   #hapticBox { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; }
-  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<main>
+<section id="setup">
   <h1>Raquette</h1>
   <p id="status">Touchez le bouton pour connecter le téléphone au jeu.</p>
   <button id="start" type="button">Activer la raquette</button>
   <button id="simulate" type="button" class="secondary" hidden>Utiliser des capteurs simulés</button>
-  <div id="live" hidden></div>
-</main>
+</section>
+
+<section id="play" hidden>
+  <div id="score">
+    <div class="row" id="rowPlayer"><span class="dot"></span><span class="name">Toi</span><span class="games" id="gamesPlayer">0</span><span class="points" id="pointsPlayer">0</span></div>
+    <div class="row" id="rowOpponent"><span class="dot"></span><span class="name">Adversaire</span><span class="games" id="gamesOpponent">0</span><span class="points" id="pointsOpponent">0</span></div>
+    <div id="link">Connexion au jeu…</div>
+  </div>
+
+  <div id="tools">
+    <button class="hold" type="button" data-action="recenter"><span class="fill"></span><span>Recentrer</span></button>
+    <button class="hold" type="button" data-action="pause"><span class="fill"></span><span id="pauseLabel">Pause</span></button>
+    <button class="hold" type="button" data-action="level"><span class="fill"></span><span id="levelLabel">Niveau</span></button>
+  </div>
+
+  <div id="message">
+    <div id="title">Raquette active</div>
+    <div id="detail">Maintenez un bouton du haut une demi-seconde pour l'utiliser.</div>
+  </div>
+
+  <button id="action" type="button"><span class="fill"></span><span id="actionLabel"></span></button>
+</section>
+
 <div id="flash"></div>
 <div id="hapticBox"><label id="hapticLabel" for="hapticSwitch">.</label><input id="hapticSwitch" type="checkbox" switch></div>
 <script>
 (function () {
   'use strict';
 
-  var statusEl = document.getElementById('status');
-  var startButton = document.getElementById('start');
-  var simulateButton = document.getElementById('simulate');
-  var liveEl = document.getElementById('live');
-  var flashEl = document.getElementById('flash');
-  var hapticLabel = document.getElementById('hapticLabel');
+  var HOLD_MS = 450;
+  var OUTCOME_MS = 3200;
+
+  function $(id) { return document.getElementById(id); }
+  var setupEl = $('setup'), playEl = $('play'), statusEl = $('status');
+  var startButton = $('start'), simulateButton = $('simulate');
+  var linkEl = $('link'), titleEl = $('title'), detailEl = $('detail');
+  var actionEl = $('action'), actionLabel = $('actionLabel');
+  var flashEl = $('flash'), hapticLabel = $('hapticLabel');
 
   var socket = null;
   var started = false;
@@ -66,8 +142,12 @@
   var orientation = [0, 0, 0];
   var motionEvents = 0;
   var audioContext = null;
-  var wakeLock = null;
-  var lastLine = '';
+  var game = null;            // dernier état du match envoyé par le jeu
+  var outcome = null;         // dernière annonce (point, faute…)
+  var outcomeUntil = 0;
+  var actionKind = '';        // rôle actuel du grand bouton
+
+  document.documentElement.style.setProperty('--hold-ms', HOLD_MS + 'ms');
 
   function setStatus(text, kind) {
     statusEl.textContent = text;
@@ -86,19 +166,22 @@
     return false;
   }
 
+  // ------------------------------------------------------------ Connexion
+
   function connect() {
     var scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
     socket = new WebSocket(scheme + location.host + '/ws');
     socket.onopen = function () {
       send('h,' + navigator.userAgent.replace(/,/g, ' ').slice(0, 140));
       ping();
-      refreshStatus();
+      render();
     };
     socket.onmessage = function (event) { onMessage(String(event.data)); };
     socket.onclose = function () {
       socket = null;
       roundTrip = -1;
-      setStatus('Connexion au jeu perdue. Nouvelle tentative…', 'error');
+      game = null;
+      render();
       setTimeout(connect, 1000);
     };
     socket.onerror = function () {};
@@ -109,28 +192,47 @@
   }
 
   function onMessage(data) {
-    var parts = data.split(',');
-    if (parts[0] === 'q') {
+    if (data.charAt(0) === 'q') {
+      var parts = data.split(',');
       var now = performance.now();
       var sentAt = parseFloat(parts[1]);
       var serverTime = parseFloat(parts[2]);
       roundTrip = now - sentAt;
-      var offset = serverTime - (sentAt + roundTrip / 2);
-      send('s,' + roundTrip.toFixed(1) + ',' + offset.toFixed(1));
-    } else if (parts[0] === 'v') {
-      haptic(parseInt(parts[1], 10) || 30);
+      send('s,' + roundTrip.toFixed(1) + ',' + (serverTime - (sentAt + roundTrip / 2)).toFixed(1));
+    } else if (data.charAt(0) === 'v') {
+      haptic(parseInt(data.split(',')[1], 10) || 30);
+    } else if (data.indexOf('st|') === 0) {
+      // État du match : st|phase|service|prêt|pause|niveau|jeux toi|jeux adv.|points toi|points adv.|serveur|fautes
+      var f = data.split('|');
+      if (game && game.phase === 'SetOver' && f[1] !== 'SetOver') {
+        outcome = null; // nouveau set : l'annonce du set précédent n'a plus lieu d'être
+      }
+      game = {
+        phase: f[1], serving: f[2] === '1', ready: f[3] === '1', paused: f[4] === '1', level: f[5],
+        gamesPlayer: f[6], gamesOpponent: f[7], pointsPlayer: f[8], pointsOpponent: f[9],
+        server: f[10], faults: parseInt(f[11], 10) || 0
+      };
+      render();
+    } else if (data.indexOf('o|') === 0) {
+      // Annonce : o|genre|titre|détail
+      var o = data.split('|');
+      outcome = { kind: o[1], title: o[2] || '', detail: o[3] || '' };
+      outcomeUntil = performance.now() + OUTCOME_MS;
+      render();
     }
   }
+
+  // ------------------------------------------------------------ Capteurs
 
   function sendSample(now, a, g, r) {
     if (now - lastSent < 14) { return; }
     lastSent = now;
-    lastLine = 'm,' + now.toFixed(1) + ',' +
+    var line = 'm,' + now.toFixed(1) + ',' +
       num(a.x) + ',' + num(a.y) + ',' + num(a.z) + ',' +
       num(g.x) + ',' + num(g.y) + ',' + num(g.z) + ',' +
       num(r.alpha) + ',' + num(r.beta) + ',' + num(r.gamma) + ',' +
       num(orientation[0]) + ',' + num(orientation[1]) + ',' + num(orientation[2]);
-    if (send(lastLine)) { sentThisSecond++; }
+    if (send(line)) { sentThisSecond++; }
   }
 
   function onMotion(event) {
@@ -148,6 +250,7 @@
   function startSimulation() {
     simulated = true;
     simulateButton.hidden = true;
+    showPlay();
     setInterval(function () {
       var now = performance.now();
       var t = now / 1000;
@@ -158,7 +261,6 @@
         { x: 0.5, y: -6.9, z: -6.9 },
         { alpha: 300 * burst, beta: 120 * Math.sin(t * 3), gamma: 60 * Math.cos(t * 2) });
     }, 16);
-    refreshStatus();
   }
 
   function unlockAudio() {
@@ -172,64 +274,177 @@
 
   function requestWakeLock() {
     if (!navigator.wakeLock || document.visibilityState !== 'visible') { return; }
-    navigator.wakeLock.request('screen').then(function (lock) { wakeLock = lock; }).catch(function () {});
+    navigator.wakeLock.request('screen').catch(function () {});
+  }
+
+  function beep(from, to, duration, volume) {
+    if (!audioContext) { return; }
+    try {
+      var oscillator = audioContext.createOscillator();
+      var gain = audioContext.createGain();
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(from, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(to, audioContext.currentTime + duration * 0.8);
+      gain.gain.setValueAtTime(volume, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + duration + 0.02);
+    } catch (error) {}
   }
 
   // Retour à l'impact : vibration si le navigateur la propose, sinon petit bruit et flash.
   function haptic(milliseconds) {
     if (navigator.vibrate) { navigator.vibrate(milliseconds); }
     try { hapticLabel.click(); } catch (error) {}
-    try {
-      // Variante du contournement iOS : un interrupteur créé à la volée puis basculé.
-      var label = document.createElement('label');
-      label.setAttribute('aria-hidden', 'true');
-      label.style.display = 'none';
-      var toggle = document.createElement('input');
-      toggle.type = 'checkbox';
-      toggle.setAttribute('switch', '');
-      label.appendChild(toggle);
-      document.head.appendChild(label);
-      label.click();
-      document.head.removeChild(label);
-    } catch (error) {}
     flashEl.style.transition = 'none';
     flashEl.style.opacity = '0.35';
     requestAnimationFrame(function () {
       flashEl.style.transition = '';
       flashEl.style.opacity = '0';
     });
-    if (audioContext) {
-      try {
-        var oscillator = audioContext.createOscillator();
-        var gain = audioContext.createGain();
-        oscillator.type = 'triangle';
-        oscillator.frequency.setValueAtTime(190, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(70, audioContext.currentTime + 0.07);
-        gain.gain.setValueAtTime(0.5, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.09);
-        oscillator.connect(gain).connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.1);
-      } catch (error) {}
+    beep(190, 70, 0.09, 0.5);
+  }
+
+  // ------------------------------------------------------------ Boutons
+
+  function levelName(level) {
+    return level === 'Easy' ? 'facile' : (level === 'Hard' ? 'difficile' : 'normal');
+  }
+
+  /** Bouton à appui maintenu : l'action part quand la jauge est pleine. */
+  function bindHold(element, getAction) {
+    var timer = null;
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      element.classList.remove('pressing');
+    }
+    element.addEventListener('pointerdown', function (event) {
+      event.preventDefault();
+      var action = getAction();
+      if (!action) { return; }
+      cancel();
+      void element.offsetWidth; // relance l'animation de la jauge
+      element.classList.add('pressing');
+      timer = setTimeout(function () {
+        timer = null;
+        element.classList.remove('pressing');
+        element.classList.add('done');
+        setTimeout(function () { element.classList.remove('done'); }, 350);
+        send('b,' + action);
+        beep(520, 780, 0.06, 0.25);
+      }, HOLD_MS);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (name) {
+      element.addEventListener(name, cancel);
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#tools .hold'), function (button) {
+    bindHold(button, function () { return button.getAttribute('data-action'); });
+  });
+
+  // Le grand bouton : immédiat pour lancer la balle ou reprendre, maintenu pour rejouer un set.
+  bindHold(actionEl, function () { return actionKind === 'restart' ? 'restart' : ''; });
+  actionEl.addEventListener('pointerdown', function (event) {
+    event.preventDefault();
+    if (actionKind === 'toss') {
+      send('b,toss');
+      beep(420, 640, 0.07, 0.3);
+    } else if (actionKind === 'resume') {
+      send('b,pause');
+    }
+  });
+
+  // ------------------------------------------------------------ Affichage
+
+  function setAction(kind, label, hint, className) {
+    actionKind = kind;
+    actionEl.className = className || '';
+    actionLabel.innerHTML = '';
+    actionLabel.appendChild(document.createTextNode(label));
+    if (hint) {
+      var small = document.createElement('small');
+      small.textContent = hint;
+      actionLabel.appendChild(small);
     }
   }
 
-  function refreshStatus() {
+  function setMessage(title, detail, className) {
+    titleEl.textContent = title;
+    titleEl.className = className || '';
+    detailEl.textContent = detail || '';
+  }
+
+  function render() {
     if (!started) { return; }
-    if (!socket || socket.readyState !== 1) { return; }
-    var source = simulated ? 'capteurs simulés' : 'capteurs du téléphone';
-    var latency = roundTrip >= 0 ? roundTrip.toFixed(0) + ' ms' : '…';
-    setStatus('Raquette active (' + source + ')\n' + rate + ' mesures/s · aller-retour ' + latency, 'ok');
-    statusEl.style.whiteSpace = 'pre-line';
-    if (lastLine) {
-      var v = lastLine.split(',');
-      liveEl.hidden = false;
-      liveEl.textContent =
-        'accél.   ' + v[2] + '  ' + v[3] + '  ' + v[4] + '\n' +
-        'rotation ' + v[8] + '  ' + v[9] + '  ' + v[10] + '\n' +
-        'orient.  ' + v[11] + '  ' + v[12] + '  ' + v[13];
+
+    var connected = socket && socket.readyState === 1;
+    var source = simulated ? 'capteurs simulés' : rate + ' mesures/s';
+    linkEl.className = connected ? '' : 'error';
+    linkEl.textContent = connected
+      ? (game ? 'Niveau ' + levelName(game.level) + ' · ' : '') + source + (roundTrip >= 0 ? ' · ' + roundTrip.toFixed(0) + ' ms' : '')
+      : 'Connexion au jeu perdue. Nouvelle tentative…';
+
+    if (!connected || !game) {
+      setMessage(connected ? 'Raquette active' : 'Jeu introuvable',
+        connected ? 'En attente du match.' : 'Vérifiez que le jeu est lancé sur le PC.', connected ? '' : 'bad');
+      setAction('', '', '', '');
+      return;
+    }
+
+    $('gamesPlayer').textContent = game.gamesPlayer;
+    $('gamesOpponent').textContent = game.gamesOpponent;
+    $('pointsPlayer').textContent = game.pointsPlayer;
+    $('pointsOpponent').textContent = game.pointsOpponent;
+    $('rowPlayer').className = 'row' + (game.server === '0' ? ' serving' : '');
+    $('rowOpponent').className = 'row' + (game.server === '1' ? ' serving' : '');
+    $('pauseLabel').textContent = game.paused ? 'Reprendre' : 'Pause';
+    $('levelLabel').textContent = 'Niveau : ' + levelName(game.level);
+
+    var second = game.faults > 0 ? 'Deuxième balle' : '';
+    if (game.paused) {
+      setMessage('Pause', 'Le match est en pause.', 'accent');
+      setAction('resume', 'REPRENDRE', '', 'live');
+    } else if (game.phase === 'SetOver') {
+      showOutcomeOr('Set terminé', game.gamesPlayer + ' jeux à ' + game.gamesOpponent + '.');
+      setAction('restart', 'REJOUER UN SET', 'Maintenez appuyé', 'live');
+    } else if (game.phase === 'PreServe' && game.serving) {
+      showOutcomeOr('À toi de servir', second);
+      if (game.ready) {
+        setAction('toss', 'LANCER LA BALLE', 'Puis frappe d\'un swing', 'live toss');
+      } else {
+        setAction('', 'En place…', '', '');
+      }
+    } else if (game.phase === 'Toss' && game.serving) {
+      setMessage('Frappe !', 'Swing quand la balle est en haut.', 'accent');
+      setAction('', 'FRAPPE !', '', 'hit');
+    } else if (game.phase === 'PreServe') {
+      showOutcomeOr('L\'adversaire sert', second);
+      setAction('', 'Prépare-toi', '', '');
+    } else {
+      showOutcomeOr('À toi de jouer', 'Frappe la balle après son rebond.');
+      setAction('', '', '', '');
     }
   }
+
+  /** Affiche l'annonce récente (point, faute…) si elle est encore d'actualité, sinon le texte par défaut. */
+  function showOutcomeOr(title, detail) {
+    if (outcome && performance.now() < outcomeUntil && outcome.title) {
+      var kind = outcome.kind === 'won' ? 'good' : (outcome.kind === 'lost' || outcome.kind === 'fault' ? 'bad' : 'accent');
+      setMessage(outcome.title, outcome.detail, kind);
+    } else {
+      setMessage(title, detail, '');
+    }
+  }
+
+  function showPlay() {
+    setupEl.hidden = true;
+    playEl.hidden = false;
+    render();
+  }
+
+  // ------------------------------------------------------------ Démarrage
 
   function start() {
     if (started) { return; }
@@ -266,14 +481,22 @@
 
       if (/[?&]sim=1/.test(location.search)) {
         startSimulation();
-      } else {
-        setTimeout(function () {
-          if (motionEvents === 0 && !simulated) {
-            setStatus('Aucun capteur de mouvement détecté sur cet appareil.', 'error');
-            simulateButton.hidden = false;
-          }
-        }, 1500);
+        return;
       }
+
+      // On passe à l'écran de jeu dès que les capteurs répondent.
+      var waited = 0;
+      var check = setInterval(function () {
+        waited += 100;
+        if (motionEvents > 0) {
+          clearInterval(check);
+          showPlay();
+        } else if (waited >= 1500) {
+          clearInterval(check);
+          setStatus('Aucun capteur de mouvement détecté sur cet appareil.', 'error');
+          simulateButton.hidden = false;
+        }
+      }, 100);
     }).catch(function (error) {
       setStatus('Accès aux capteurs impossible : ' + error, 'error');
     });
@@ -284,12 +507,13 @@
   document.addEventListener('visibilitychange', function () {
     if (started && document.visibilityState === 'visible') { requestWakeLock(); }
   });
+  document.addEventListener('contextmenu', function (event) { event.preventDefault(); });
 
   setInterval(function () {
     rate = sentThisSecond;
     sentThisSecond = 0;
     ping();
-    refreshStatus();
+    render();
   }, 1000);
 
   if (!window.isSecureContext) {
