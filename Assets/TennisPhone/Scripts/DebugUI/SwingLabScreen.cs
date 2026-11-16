@@ -79,7 +79,8 @@ namespace TennisPhone
 
         void Start()
         {
-            racket = BuildRacket();
+            racket = RacketModel.Build(out headRenderer);
+            headColor = RacketModel.StringColor;
         }
 
         void OnSwing(SwingEvent swing)
@@ -124,40 +125,6 @@ namespace TennisPhone
 
             float highlight = Mathf.Clamp01(1f - (Time.unscaledTime - lastSwingTime) / 0.35f);
             headRenderer.material.color = Color.Lerp(headColor, Color.white, highlight);
-        }
-
-        Transform BuildRacket()
-        {
-            var root = new GameObject("Raquette").transform;
-
-            // Axes locaux : Z du manche vers la tête, Y normale du tamis.
-            CreatePart(root, PrimitiveType.Cylinder, "Manche", new Vector3(0f, 0f, 0.1f),
-                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.032f, 0.1f, 0.032f), new Color(0.15f, 0.15f, 0.17f));
-            CreatePart(root, PrimitiveType.Cylinder, "Cœur", new Vector3(0f, 0f, 0.26f),
-                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.022f, 0.07f, 0.022f), new Color(0.85f, 0.25f, 0.2f));
-            CreatePart(root, PrimitiveType.Cylinder, "Cadre", new Vector3(0f, 0f, 0.47f),
-                Quaternion.identity, new Vector3(0.27f, 0.011f, 0.33f), new Color(0.85f, 0.25f, 0.2f));
-
-            headColor = new Color(0.95f, 0.92f, 0.75f);
-            Transform strings = CreatePart(root, PrimitiveType.Cylinder, "Cordage", new Vector3(0f, 0f, 0.47f),
-                Quaternion.identity, new Vector3(0.24f, 0.013f, 0.3f), headColor);
-            headRenderer = strings.GetComponent<Renderer>();
-
-            return root;
-        }
-
-        static Transform CreatePart(Transform parent, PrimitiveType type, string name, Vector3 localPosition,
-            Quaternion localRotation, Vector3 scale, Color color)
-        {
-            GameObject part = GameObject.CreatePrimitive(type);
-            part.name = name;
-            Destroy(part.GetComponent<Collider>());
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = localPosition;
-            part.transform.localRotation = localRotation;
-            part.transform.localScale = scale;
-            part.GetComponent<Renderer>().material.color = color;
-            return part.transform;
         }
 
         void OnGUI()

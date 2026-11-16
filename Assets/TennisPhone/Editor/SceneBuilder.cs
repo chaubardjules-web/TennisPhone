@@ -55,6 +55,58 @@ namespace TennisPhone.EditorTools
             Debug.Log("[TennisPhone] Scène créée : " + SensorDebugScenePath);
         }
 
+        public const string CourtScenePath = "Assets/TennisPhone/Scenes/Court.unity";
+
+        [MenuItem("TennisPhone/Creer la scene du court")]
+        public static void BuildCourtScene()
+        {
+            GameplayConfig config = EnsureGameplayConfig();
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Vue derrière le joueur, un peu en hauteur, vers le filet.
+            var cameraObject = new GameObject("Caméra");
+            cameraObject.tag = "MainCamera";
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.55f, 0.75f, 0.92f);
+            camera.fieldOfView = 40f;
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = 120f;
+            cameraObject.transform.position = new Vector3(0f, 5.2f, -23f);
+            cameraObject.transform.LookAt(new Vector3(0f, 0f, -4f));
+            cameraObject.AddComponent<AudioListener>();
+
+            var lightObject = new GameObject("Soleil");
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.15f;
+            light.shadows = LightShadows.Soft;
+            lightObject.transform.rotation = Quaternion.Euler(52f, -35f, 0f);
+
+            var game = new GameObject("Jeu");
+            game.AddComponent<PhoneLink>();
+            RacketInput racketInput = game.AddComponent<RacketInput>();
+            racketInput.SetConfig(config);
+            EditorUtility.SetDirty(racketInput);
+            game.AddComponent<RallyController>();
+            game.AddComponent<RallyHud>();
+
+            Directory.CreateDirectory(Path.GetDirectoryName(CourtScenePath));
+            EditorSceneManager.SaveScene(scene, CourtScenePath);
+
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(CourtScenePath, true),
+                new EditorBuildSettingsScene(SwingLabScenePath, File.Exists(SwingLabScenePath)),
+                new EditorBuildSettingsScene(SensorDebugScenePath, File.Exists(SensorDebugScenePath)),
+            };
+
+            PlayerSettings.runInBackground = true;
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[TennisPhone] Scène créée : " + CourtScenePath);
+        }
+
         public const string SwingLabScenePath = "Assets/TennisPhone/Scenes/SwingLab.unity";
         public const string GameplayConfigPath = "Assets/TennisPhone/Config/GameplayConfig.asset";
 

@@ -94,6 +94,162 @@ namespace TennisPhone
         [Tooltip("Effet appliqué quand la flèche haut (lift) ou bas (slice) est maintenue.")]
         [Range(0f, 1f)] public float keyboardSpin = 0.7f;
 
+        [Header("Court (mètres, règles officielles)")]
+        [Tooltip("Longueur totale du court.")]
+        [Min(1f)] public float courtLength = 23.77f;
+
+        [Tooltip("Largeur du court en simple.")]
+        [Min(1f)] public float courtWidth = 8.23f;
+
+        [Tooltip("Distance entre le filet et la ligne de service.")]
+        [Min(0.5f)] public float serviceLineDistance = 6.4f;
+
+        [Tooltip("Hauteur du filet au centre.")]
+        [Min(0.1f)] public float netHeightCenter = 0.914f;
+
+        [Tooltip("Hauteur du filet aux poteaux.")]
+        [Min(0.1f)] public float netHeightPosts = 1.07f;
+
+        [Tooltip("Distance entre la ligne de côté et le poteau du filet.")]
+        [Min(0f)] public float netPostOffset = 0.914f;
+
+        [Header("Balle : vol")]
+        [Tooltip("Gravité (m/s²).")]
+        [Min(0f)] public float gravity = 9.81f;
+
+        [Tooltip("Rayon de la balle (m).")]
+        [Min(0.005f)] public float ballRadius = 0.033f;
+
+        [Tooltip("Masse de la balle (kg).")]
+        [Min(0.001f)] public float ballMass = 0.0577f;
+
+        [Tooltip("Densité de l'air (kg/m³).")]
+        [Min(0f)] public float airDensity = 1.225f;
+
+        [Tooltip("Coefficient de traînée : plus il est grand, plus la balle ralentit en l'air.")]
+        [Min(0f)] public float dragCoefficient = 0.31f;
+
+        [Tooltip("Coefficient de portance maximal : limite la courbure donnée par l'effet.")]
+        [Min(0f)] public float liftCoefficientMax = 0.36f;
+
+        [Tooltip("Temps (s) au bout duquel la rotation de la balle a nettement diminué.")]
+        [Min(0.1f)] public float spinDecayTime = 7.4f;
+
+        [Header("Balle : rebond et filet")]
+        [Tooltip("Part de la vitesse verticale conservée au rebond (0 à 1).")]
+        [Range(0f, 1f)] public float bounceRestitution = 0.74f;
+
+        [Tooltip("Frottement du sol au rebond : plus il est grand, plus la balle est freinée.")]
+        [Range(0f, 1.5f)] public float bounceFriction = 0.56f;
+
+        [Tooltip("Répartition de la masse de la balle (0,4 = pleine, 0,67 = creuse). Règle l'échange entre vitesse et rotation au rebond.")]
+        [Range(0.3f, 0.7f)] public float ballInertiaFactor = 0.55f;
+
+        [Tooltip("Part de la vitesse conservée par une balle qui touche le filet.")]
+        [Range(0f, 0.5f)] public float netRestitution = 0.1f;
+
+        [Header("Frappe : timing et direction")]
+        [Tooltip("Écart maximal (s) entre le swing et l'instant idéal pour toucher la balle.")]
+        [Min(0.02f)] public float timingWindow = 0.18f;
+
+        [Tooltip("Décalage latéral (m) du point visé pour un swing en bord de fenêtre : tôt = croisé, tard = long de ligne. "
+            + "Au-delà de la demi-largeur du court (4,1 m), un swing très décalé envoie la balle en faute.")]
+        [Min(0f)] public float aimMaxOffset = 4.8f;
+
+        [Header("Frappe : vitesse et profondeur")]
+        [Tooltip("Vitesse de la balle (m/s) pour un swing de puissance 0.")]
+        [Min(1f)] public float shotSpeedMin = 14f;
+
+        [Tooltip("Vitesse de la balle (m/s) pour un swing de puissance 1.")]
+        [Min(1f)] public float shotSpeedMax = 27f;
+
+        [Tooltip("Distance au filet (m) du point visé pour un swing de puissance 0.")]
+        [Min(1f)] public float shotDepthMin = 6.5f;
+
+        [Tooltip("Distance au filet (m) du point visé pour un swing de puissance 1.")]
+        [Min(1f)] public float shotDepthMax = 10.8f;
+
+        [Tooltip("Marge (m) au-dessus du filet visée pour une frappe à plat.")]
+        [Min(0f)] public float shotNetMargin = 0.3f;
+
+        [Header("Frappe : effets")]
+        [Tooltip("Rotation de la balle (tours par minute) pour un lift maximal.")]
+        [Min(0f)] public float liftRpmMax = 3000f;
+
+        [Tooltip("Marge supplémentaire (m) au-dessus du filet pour un lift maximal.")]
+        [Min(0f)] public float liftNetMarginBonus = 0.5f;
+
+        [Tooltip("Vitesse d'un lift maximal par rapport à une frappe à plat.")]
+        [Range(0.5f, 1.2f)] public float liftSpeedFactor = 0.95f;
+
+        [Tooltip("Rotation de la balle (tours par minute) pour un slice maximal.")]
+        [Min(0f)] public float sliceRpmMax = 2500f;
+
+        [Tooltip("Vitesse d'un slice maximal par rapport à une frappe à plat.")]
+        [Range(0.5f, 1.2f)] public float sliceSpeedFactor = 0.85f;
+
+        [Header("Joueur : déplacement automatique")]
+        [Tooltip("Vitesse de course (m/s).")]
+        [Min(0.5f)] public float playerMoveSpeed = 7.5f;
+
+        [Tooltip("Distance maximale (m) entre le joueur et la balle pour pouvoir la frapper.")]
+        [Min(0.3f)] public float playerReach = 1.5f;
+
+        [Tooltip("Hauteur (m) à laquelle le joueur cherche à frapper la balle après le rebond.")]
+        [Min(0.2f)] public float contactHeight = 0.9f;
+
+        [Tooltip("Écart latéral (m) entre le joueur et la balle au moment de la frappe.")]
+        [Min(0f)] public float playerSideOffset = 0.55f;
+
+        [Tooltip("Distance (m) derrière la ligne de fond où le joueur se replace.")]
+        [Min(0f)] public float playerHomeDepth = 0.8f;
+
+        [Header("Lanceur de balles (entraînement)")]
+        [Tooltip("Délai (s) entre la fin d'un échange et la balle suivante.")]
+        [Min(0.2f)] public float feederInterval = 1.5f;
+
+        [Tooltip("Vitesse (m/s) des balles envoyées.")]
+        [Min(5f)] public float feederSpeed = 16f;
+
+        [Tooltip("Profondeur minimale (m depuis le filet) du rebond des balles envoyées.")]
+        [Min(1f)] public float feederDepthMin = 6.5f;
+
+        [Tooltip("Profondeur maximale (m depuis le filet) du rebond des balles envoyées.")]
+        [Min(1f)] public float feederDepthMax = 10f;
+
+        [Tooltip("Demi-largeur (m) de la zone visée par le lanceur.")]
+        [Min(0f)] public float feederHalfWidth = 3f;
+
+        public CourtDimensions ToCourt()
+        {
+            return new CourtDimensions
+            {
+                HalfLength = courtLength * 0.5f,
+                HalfWidth = courtWidth * 0.5f,
+                ServiceLine = serviceLineDistance,
+                NetHeightCenter = netHeightCenter,
+                NetHeightPosts = netHeightPosts,
+                NetHalfWidth = courtWidth * 0.5f + netPostOffset,
+            };
+        }
+
+        public BallSettings ToBallSettings()
+        {
+            return new BallSettings
+            {
+                Gravity = gravity,
+                Radius = ballRadius,
+                AirFactor = airDensity * Mathf.PI * ballRadius * ballRadius / (2f * ballMass),
+                DragCoefficient = dragCoefficient,
+                LiftCoefficientMax = liftCoefficientMax,
+                SpinDecayTime = spinDecayTime,
+                BounceRestitution = bounceRestitution,
+                BounceFriction = bounceFriction,
+                InertiaFactor = ballInertiaFactor,
+                NetRestitution = netRestitution,
+            };
+        }
+
         public SwingSettings ToSwingSettings()
         {
             return new SwingSettings

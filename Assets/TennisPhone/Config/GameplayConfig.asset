@@ -37,3 +37,42 @@ MonoBehaviour:
   mouseMinPower: 0.35
   keyboardPower: 0.6
   keyboardSpin: 0.7
+  courtLength: 23.77
+  courtWidth: 8.23
+  serviceLineDistance: 6.4
+  netHeightCenter: 0.914
+  netHeightPosts: 1.07
+  netPostOffset: 0.914
+  gravity: 9.81
+  ballRadius: 0.033
+  ballMass: 0.0577
+  airDensity: 1.225
+  dragCoefficient: 0.31
+  liftCoefficientMax: 0.36
+  spinDecayTime: 7.4
+  bounceRestitution: 0.74
+  bounceFriction: 0.56
+  ballInertiaFactor: 0.55
+  netRestitution: 0.1
+  timingWindow: 0.18
+  aimMaxOffset: 4.8
+  shotSpeedMin: 14
+  shotSpeedMax: 27
+  shotDepthMin: 6.5
+  shotDepthMax: 10.8
+  shotNetMargin: 0.3
+  liftRpmMax: 3000
+  liftNetMarginBonus: 0.5
+  liftSpeedFactor: 0.95
+  sliceRpmMax: 2500
+  sliceSpeedFactor: 0.85
+  playerMoveSpeed: 7.5
+  playerReach: 1.5
+  contactHeight: 0.9
+  playerSideOffset: 0.55
+  playerHomeDepth: 0.8
+  feederInterval: 1.5
+  feederSpeed: 16
+  feederDepthMin: 6.5
+  feederDepthMax: 10
+  feederHalfWidth: 3
