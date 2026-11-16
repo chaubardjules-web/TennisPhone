@@ -18,6 +18,18 @@ namespace TennisPhone
         KeyboardMouse,
     }
 
+    /// <summary>Ce que le détecteur vient de produire pour une mesure.</summary>
+    public enum SwingUpdate
+    {
+        None,
+
+        /// <summary>Un swing vient d'être reconnu : c'est le moment de frapper la balle.</summary>
+        Impact,
+
+        /// <summary>L'effet du dernier swing est précisé par la fin du geste (slice).</summary>
+        Refined,
+    }
+
     /// <summary>
     /// Mouvement du téléphone à un instant, réduit aux grandeurs utiles à la détection du swing.
     /// </summary>
@@ -40,6 +52,12 @@ namespace TennisPhone
 
         /// <summary>Vitesse de rotation autour du grand axe du téléphone (le poignet qui tourne), en degrés par seconde.</summary>
         public float RollRate;
+
+        /// <summary>
+        /// Orientation de l'écran par rapport au ciel : 1 quand l'écran regarde vers le haut,
+        /// -1 vers le bas, 0 quand il est vertical.
+        /// </summary>
+        public float FaceUp;
     }
 
     /// <summary>
@@ -47,6 +65,9 @@ namespace TennisPhone
     /// </summary>
     public struct SwingEvent
     {
+        /// <summary>Numéro du swing, repris quand son effet est précisé.</summary>
+        public int Id;
+
         public SwingSource Source;
         public SwingSide Side;
 
@@ -76,18 +97,22 @@ namespace TennisPhone
         public float AccelerationThreshold;
         public float RotationThreshold;
         public float ReleaseRatio;
-        public float PeakFallRatio;
+        public float ImpactFallRatio;
         public float MinDuration;
         public float MaxDuration;
+        public float FollowThroughDuration;
         public float Cooldown;
         public float PowerAccelerationMin;
         public float PowerAccelerationMax;
         public float PowerRotationMin;
         public float PowerRotationMax;
         public float PowerRotationWeight;
-        public float SpinRollRateFull;
-        public float SpinDeadZone;
+        public float LiftRollRateMin;
+        public float LiftRollRateFull;
+        public float SliceFaceOpeningMin;
+        public float SliceFaceOpeningFull;
         public bool InvertSide;
-        public bool InvertSpin;
+        public bool InvertLift;
+        public bool InvertSlice;
     }
 }

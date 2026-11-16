@@ -9,18 +9,34 @@ namespace TennisPhone
     /// </summary>
     public static class SwingReplay
     {
+        public struct Entry
+        {
+            public SensorSample Sample;
+
+            /// <summary>Numéro de série du geste demandé (voir SensorRecorder).</summary>
+            public int Label;
+
+            /// <summary>Numéro du geste dans sa série.</summary>
+            public int Repetition;
+        }
+
         public struct Result
         {
+            /// <summary>Le swing, avec son effet final (après l'accompagnement).</summary>
             public SwingEvent Swing;
 
-            /// <summary>Étiquette du geste à la fin du swing (numéro de série de SensorRecorder).</summary>
+            /// <summary>Étiquette et numéro du geste au moment de l'impact.</summary>
             public int Label;
+            public int Repetition;
+
+            /// <summary>Vrai si l'effet a été précisé après l'impact.</summary>
+            public bool Refined;
         }
 
         /// <summary>Lit les lignes d'un fichier CSV. Les lignes illisibles sont ignorées.</summary>
-        public static List<KeyValuePair<SensorSample, int>> Parse(IEnumerable<string> csvLines)
+        public static List<Entry> Parse(IEnumerable<string> csvLines)
         {
-            var samples = new List<KeyValuePair<SensorSample, int>>();
+            var entries = new List<Entry>();
             foreach (string csvLine in csvLines)
             {
                 if (string.IsNullOrWhiteSpace(csvLine) || csvLine.StartsWith("phoneMs"))
@@ -38,26 +54,41 @@ namespace TennisPhone
                     continue;
                 }
 
+                int repetition = 0;
+                if (parts.Length == 16)
+                {
+                    int.TryParse(parts[15], NumberStyles.Integer, CultureInfo.InvariantCulture, out repetition);
+                }
+
                 string sampleLine = SensorSample.Prefix + parts[0] + "," + string.Join(",", parts, 2, 12);
                 if (SensorSample.TryParse(sampleLine, serverMs, out SensorSample sample))
                 {
-                    samples.Add(new KeyValuePair<SensorSample, int>(sample, label));
+                    entries.Add(new Entry { Sample = sample, Label = label, Repetition = repetition });
                 }
             }
 
-            return samples;
+            return entries;
         }
 
         /// <summary>Passe les mesures dans un détecteur neuf et renvoie les swings trouvés.</summary>
-        public static List<Result> Run(IList<KeyValuePair<SensorSample, int>> samples, SwingSettings settings)
+        public static List<Result> Run(IList<Entry> entries, SwingSettings settings)
         {
             var detector = new SwingDetector(settings);
             var results = new List<Result>();
-            foreach (KeyValuePair<SensorSample, int> entry in samples)
+            foreach (Entry entry in entries)
             {
-                if (detector.Process(PhoneMotion.ToFrame(entry.Key), out SwingEvent swing))
+                SwingUpdate update = detector.Process(PhoneMotion.ToFrame(entry.Sample), out SwingEvent swing);
+                if (update == SwingUpdate.Impact)
                 {
-                    results.Add(new Result { Swing = swing, Label = entry.Value });
+                    results.Add(new Result { Swing = swing, Label = entry.Label, Repetition = entry.Repetition });
+                }
+                else if (update == SwingUpdate.Refined && results.Count > 0
+                    && results[results.Count - 1].Swing.Id == swing.Id)
+                {
+                    Result last = results[results.Count - 1];
+                    last.Swing = swing;
+                    last.Refined = true;
+                    results[results.Count - 1] = last;
                 }
             }
 

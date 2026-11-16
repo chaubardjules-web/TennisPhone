@@ -30,6 +30,7 @@ namespace TennisPhone
                 RotationSpeed = sample.RotationRate.magnitude,
                 YawRate = Vector3.Dot(angularVelocity, up),
                 RollRate = angularVelocity.y,
+                FaceUp = up.z,
             };
         }
     }

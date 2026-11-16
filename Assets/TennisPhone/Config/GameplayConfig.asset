@@ -14,20 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.GameplayConfig
   handedness: 0
   swingAccelerationThreshold: 12
-  swingRotationThreshold: 220
+  swingRotationThreshold: 280
   swingReleaseRatio: 0.6
-  swingMinDuration: 0.03
+  swingImpactFallRatio: 0.85
+  swingMinDuration: 0.05
   swingMaxDuration: 0.6
-  swingCooldown: 0.35
+  swingFollowThroughDuration: 0.3
+  swingCooldown: 0.4
   invertSwingSide: 0
   powerAccelerationMin: 12
-  powerAccelerationMax: 55
-  powerRotationMin: 220
-  powerRotationMax: 1100
+  powerAccelerationMax: 45
+  powerRotationMin: 280
+  powerRotationMax: 1000
   powerRotationWeight: 0.5
-  spinRollRateFull: 500
-  spinDeadZone: 0.15
-  invertSpin: 0
+  liftRollRateMin: 250
+  liftRollRateFull: 550
+  invertLift: 0
+  sliceFaceOpeningMin: 0.6
+  sliceFaceOpeningFull: 1
+  invertSlice: 0
   mouseSpeedForFullPower: 3000
   mouseMinPower: 0.35
   keyboardPower: 0.6

@@ -50,11 +50,31 @@ namespace TennisPhone
         void OnEnable()
         {
             input.Swung += OnSwing;
+            input.SwingRefined += OnSwingRefined;
         }
 
         void OnDisable()
         {
             input.Swung -= OnSwing;
+            input.SwingRefined -= OnSwingRefined;
+        }
+
+        /// <summary>La fin du geste a changé l'effet du coup : on corrige l'affichage.</summary>
+        void OnSwingRefined(SwingEvent swing)
+        {
+            if (hasSwing && lastSwing.Id == swing.Id)
+            {
+                lastSwing = swing;
+                lastSwingTime = Time.unscaledTime;
+            }
+
+            for (int i = 0; i < history.Count; i++)
+            {
+                if (history[i].Id == swing.Id)
+                {
+                    history[i] = swing;
+                }
+            }
         }
 
         void Start()
@@ -245,8 +265,10 @@ namespace TennisPhone
                     config.swingRotationThreshold, new Color(0.95f, 0.65f, 0.25f));
                 DrawSignedMeter("Rotation autour de la verticale (°/s)", frame.YawRate, config.powerRotationMax,
                     new Color(0.4f, 0.6f, 0.95f));
-                DrawSignedMeter("Rotation du poignet (°/s)", frame.RollRate, config.spinRollRateFull,
+                DrawSignedMeter("Rotation du poignet (°/s)", frame.RollRate, config.liftRollRateFull,
                     new Color(0.8f, 0.45f, 0.9f));
+                DrawSignedMeter("Écran vers le sol ← → vers le ciel", frame.FaceUp, 1f,
+                    new Color(0.95f, 0.85f, 0.35f));
                 GUILayout.Label(input.IsTrackingSwing ? "Geste en cours d'analyse…" : " ", textStyle);
             }
             else

@@ -22,8 +22,17 @@ namespace TennisPhone
         Vector3 lastMousePosition;
         float mouseSpeed;
 
+        // Numéros négatifs pour ne jamais croiser ceux du détecteur.
+        int nextManualId = -1;
+
         /// <summary>Déclenché sur le thread principal à chaque swing, quelle que soit la source.</summary>
         public event Action<SwingEvent> Swung;
+
+        /// <summary>
+        /// Déclenché peu après Swung quand la fin du geste change l'effet du coup (slice).
+        /// L'événement porte le même Id que le swing d'origine.
+        /// </summary>
+        public event Action<SwingEvent> SwingRefined;
 
         public GameplayConfig Config => config;
 
@@ -102,7 +111,8 @@ namespace TennisPhone
             LatestFrame = frame;
             HasFrame = true;
 
-            if (!detector.Process(frame, out SwingEvent swing))
+            SwingUpdate update = detector.Process(frame, out SwingEvent swing);
+            if (update == SwingUpdate.None)
             {
                 return;
             }
@@ -119,7 +129,14 @@ namespace TennisPhone
                 swing.AgeSeconds = Mathf.Max(0f, (float)(frame.TimeSeconds - swing.PeakTimeSeconds));
             }
 
-            Swung?.Invoke(swing);
+            if (update == SwingUpdate.Impact)
+            {
+                Swung?.Invoke(swing);
+            }
+            else
+            {
+                SwingRefined?.Invoke(swing);
+            }
         }
 
         void Update()
@@ -181,6 +198,7 @@ namespace TennisPhone
 
             Swung?.Invoke(new SwingEvent
             {
+                Id = nextManualId--,
                 Source = SwingSource.KeyboardMouse,
                 Side = side,
                 Power = Mathf.Clamp01(power),
