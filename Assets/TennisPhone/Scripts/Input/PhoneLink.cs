@@ -51,6 +51,12 @@ namespace TennisPhone
 
         public float RoundTripMs => server != null ? server.RoundTripMs : -1f;
 
+        /// <summary>Écart « horloge serveur moins horloge téléphone », en millisecondes.</summary>
+        public float ClockOffsetMs => server != null ? server.ClockOffsetMs : 0f;
+
+        /// <summary>Horloge du serveur, en millisecondes.</summary>
+        public double ServerNowMs => server != null ? server.NowMs : 0.0;
+
         public long TlsFailures => server != null ? server.TlsFailures : 0;
 
         public long TotalSamples => server != null ? server.TotalSamples : 0;

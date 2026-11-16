@@ -1,0 +1,193 @@
+using System;
+using UnityEngine;
+
+namespace TennisPhone
+{
+    /// <summary>
+    /// Entrée « raquette » du jeu. Réunit deux sources, actives en même temps :
+    /// - le téléphone, dont les capteurs passent par le détecteur de swing ;
+    /// - le clavier et la souris, pour tester sans téléphone
+    ///   (clic gauche : coup droit, clic droit : revers, espace : coup droit de puissance fixe,
+    ///   flèche haut maintenue : lift, flèche bas maintenue : slice).
+    /// </summary>
+    public sealed class RacketInput : MonoBehaviour
+    {
+        const float MouseSpeedSmoothing = 0.12f;
+
+        [SerializeField] GameplayConfig config;
+
+        PhoneLink link;
+        SwingDetector detector;
+        Quaternion yawOffset = Quaternion.identity;
+        Vector3 lastMousePosition;
+        float mouseSpeed;
+
+        /// <summary>Déclenché sur le thread principal à chaque swing, quelle que soit la source.</summary>
+        public event Action<SwingEvent> Swung;
+
+        public GameplayConfig Config => config;
+
+        /// <summary>Vrai quand un téléphone envoie des mesures.</summary>
+        public bool HasPhone => link != null && link.HasSample;
+
+        public bool HasFrame { get; private set; }
+
+        /// <summary>Dernier mouvement du téléphone.</summary>
+        public MotionFrame LatestFrame { get; private set; }
+
+        public bool IsTrackingSwing => detector != null && detector.IsTracking;
+
+        /// <summary>Vitesse lissée de la souris, en pixels par seconde.</summary>
+        public float MouseSpeed => mouseSpeed;
+
+        /// <summary>
+        /// Orientation de la raquette : celle du téléphone s'il est connecté, sinon une pose de repos.
+        /// L'axe local Z est le manche vers la tête, l'axe local Y la normale du tamis.
+        /// </summary>
+        public Quaternion RacketRotation
+        {
+            get
+            {
+                if (HasPhone)
+                {
+                    return yawOffset * DeviceOrientationMath.ToUnityRotation(link.Latest.Orientation);
+                }
+
+                return Quaternion.Euler(-55f, 0f, 0f);
+            }
+        }
+
+        public void SetConfig(GameplayConfig value)
+        {
+            config = value;
+        }
+
+        void Awake()
+        {
+            link = GetComponent<PhoneLink>();
+            if (config == null)
+            {
+                Debug.LogError("[TennisPhone] RacketInput n'a pas de GameplayConfig.");
+                enabled = false;
+                return;
+            }
+
+            detector = new SwingDetector(config.ToSwingSettings());
+        }
+
+        void OnEnable()
+        {
+            if (link != null)
+            {
+                link.SampleReceived += OnSample;
+            }
+
+            lastMousePosition = Input.mousePosition;
+        }
+
+        void OnDisable()
+        {
+            if (link != null)
+            {
+                link.SampleReceived -= OnSample;
+            }
+        }
+
+        void OnSample(SensorSample sample)
+        {
+            // Relu à chaque mesure : un réglage modifié dans l'inspecteur s'applique tout de suite.
+            detector.Settings = config.ToSwingSettings();
+
+            MotionFrame frame = PhoneMotion.ToFrame(sample);
+            LatestFrame = frame;
+            HasFrame = true;
+
+            if (!detector.Process(frame, out SwingEvent swing))
+            {
+                return;
+            }
+
+            // Âge du pic : via la synchronisation d'horloge si elle est disponible,
+            // sinon d'après l'horloge du téléphone seule (sans le délai réseau).
+            if (link.RoundTripMs >= 0f)
+            {
+                double peakServerMs = swing.PeakTimeSeconds * 1000.0 + link.ClockOffsetMs;
+                swing.AgeSeconds = Mathf.Max(0f, (float)((link.ServerNowMs - peakServerMs) / 1000.0));
+            }
+            else
+            {
+                swing.AgeSeconds = Mathf.Max(0f, (float)(frame.TimeSeconds - swing.PeakTimeSeconds));
+            }
+
+            Swung?.Invoke(swing);
+        }
+
+        void Update()
+        {
+            UpdateMouseSpeed();
+
+            if (HasPhone && Input.GetKeyDown(KeyCode.R))
+            {
+                // Recentre : la tête de raquette pointe vers le fond du court.
+                float yaw = DeviceOrientationMath.ToUnityRotation(link.Latest.Orientation).eulerAngles.y;
+                yawOffset = Quaternion.Euler(0f, -yaw, 0f);
+            }
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                RaiseManualSwing(SwingSide.Forehand, MousePower());
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                RaiseManualSwing(SwingSide.Backhand, MousePower());
+            }
+            else if (Input.GetKeyDown(KeyCode.Space))
+            {
+                RaiseManualSwing(SwingSide.Forehand, config.keyboardPower);
+            }
+        }
+
+        void UpdateMouseSpeed()
+        {
+            Vector3 position = Input.mousePosition;
+            float deltaTime = Time.unscaledDeltaTime;
+            if (deltaTime > 0f)
+            {
+                float instantSpeed = (position - lastMousePosition).magnitude / deltaTime;
+                float blend = 1f - Mathf.Exp(-deltaTime / MouseSpeedSmoothing);
+                mouseSpeed = Mathf.Lerp(mouseSpeed, instantSpeed, blend);
+            }
+
+            lastMousePosition = position;
+        }
+
+        float MousePower()
+        {
+            float fromSpeed = Mathf.Clamp01(mouseSpeed / config.mouseSpeedForFullPower);
+            return Mathf.Max(config.mouseMinPower, fromSpeed);
+        }
+
+        void RaiseManualSwing(SwingSide side, float power)
+        {
+            float spin = 0f;
+            if (Input.GetKey(KeyCode.UpArrow))
+            {
+                spin = config.keyboardSpin;
+            }
+            else if (Input.GetKey(KeyCode.DownArrow))
+            {
+                spin = -config.keyboardSpin;
+            }
+
+            Swung?.Invoke(new SwingEvent
+            {
+                Source = SwingSource.KeyboardMouse,
+                Side = side,
+                Power = Mathf.Clamp01(power),
+                Spin = spin,
+                PeakTimeSeconds = Time.unscaledTimeAsDouble,
+                AgeSeconds = 0f,
+            });
+        }
+    }
+}

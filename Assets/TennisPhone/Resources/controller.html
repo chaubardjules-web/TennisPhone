@@ -179,6 +179,19 @@
   function haptic(milliseconds) {
     if (navigator.vibrate) { navigator.vibrate(milliseconds); }
     try { hapticLabel.click(); } catch (error) {}
+    try {
+      // Variante du contournement iOS : un interrupteur créé à la volée puis basculé.
+      var label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.display = 'none';
+      var toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.setAttribute('switch', '');
+      label.appendChild(toggle);
+      document.head.appendChild(label);
+      label.click();
+      document.head.removeChild(label);
+    } catch (error) {}
     flashEl.style.transition = 'none';
     flashEl.style.opacity = '0.35';
     requestAnimationFrame(function () {

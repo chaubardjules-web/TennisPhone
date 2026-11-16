@@ -43,6 +43,7 @@ namespace TennisPhone
 
         TcpListener httpsListener;
         TcpListener httpListener;
+        volatile Client activeClient;
         volatile bool running;
         volatile float roundTripMs = -1f;
         volatile float clockOffsetMs;
@@ -335,7 +336,9 @@ namespace TennisPhone
             var client = new Client { Tcp = tcp, Stream = stream };
             lock (clientsLock)
             {
+                // Le dernier téléphone connecté devient la raquette ; les autres sont ignorés.
                 clients.Add(client);
+                activeClient = client;
             }
 
             try
@@ -363,6 +366,10 @@ namespace TennisPhone
                 lock (clientsLock)
                 {
                     removed = clients.Remove(client);
+                    if (activeClient == client)
+                    {
+                        activeClient = clients.Count > 0 ? clients[clients.Count - 1] : null;
+                    }
                 }
 
                 if (removed && running)
@@ -376,7 +383,7 @@ namespace TennisPhone
         {
             if (text.StartsWith(SensorSample.Prefix))
             {
-                if (SensorSample.TryParse(text, NowMs, out SensorSample sample))
+                if (client == activeClient && SensorSample.TryParse(text, NowMs, out SensorSample sample))
                 {
                     Interlocked.Increment(ref totalSamples);
                     if (Samples.Count < MaxQueuedSamples)
@@ -394,7 +401,7 @@ namespace TennisPhone
             else if (text.StartsWith("s,"))
             {
                 string[] parts = text.Split(',');
-                if (parts.Length >= 3
+                if (client == activeClient && parts.Length >= 3
                     && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float rtt)
                     && float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float offset))
                 {

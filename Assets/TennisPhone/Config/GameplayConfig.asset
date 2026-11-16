@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ffe350b3486abb448da2f3b962d2049, type: 3}
+  m_Name: GameplayConfig
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.GameplayConfig
+  handedness: 0
+  swingAccelerationThreshold: 12
+  swingRotationThreshold: 220
+  swingReleaseRatio: 0.6
+  swingMinDuration: 0.03
+  swingMaxDuration: 0.25
+  swingCooldown: 0.35
+  invertSwingSide: 0
+  powerAccelerationMin: 12
+  powerAccelerationMax: 55
+  powerRotationMin: 220
+  powerRotationMax: 1100
+  powerRotationWeight: 0.5
+  spinRollRateFull: 500
+  spinDeadZone: 0.15
+  invertSpin: 0
+  mouseSpeedForFullPower: 3000
+  mouseMinPower: 0.35
+  keyboardPower: 0.6
+  keyboardSpin: 0.7
