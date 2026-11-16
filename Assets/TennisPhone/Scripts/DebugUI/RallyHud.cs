@@ -39,7 +39,7 @@ namespace TennisPhone
             float width = Screen.width / scale;
 
             DrawStatus(new Rect(16f, 16f, 300f, 250f));
-            DrawCounters(new Rect(width - 256f, 16f, 240f, 150f));
+            DrawCounters(new Rect(width - 296f, 16f, 280f, 118f));
             DrawOutcome(new Rect(width * 0.5f - 280f, 70f, 560f, 110f));
             DrawTiming(new Rect(width * 0.5f - 260f, ReferenceHeight - 96f, 520f, 88f));
         }
@@ -48,7 +48,7 @@ namespace TennisPhone
         {
             GUI.Box(area, GUIContent.none);
             GUILayout.BeginArea(new Rect(area.x + 12f, area.y + 8f, area.width - 24f, area.height - 16f));
-            GUILayout.Label("Entraînement", titleStyle);
+            GUILayout.Label("Échange libre", titleStyle);
 
             if (link != null && !string.IsNullOrEmpty(link.Error))
             {
@@ -74,11 +74,10 @@ namespace TennisPhone
         {
             GUI.Box(area, GUIContent.none);
             GUILayout.BeginArea(new Rect(area.x + 12f, area.y + 8f, area.width - 24f, area.height - 16f));
-            GUILayout.Label("Balles frappées : " + rally.Hits, titleStyle);
-            GUILayout.Label("Dans le court : " + rally.InCount, textStyle);
-            GUILayout.Label("Fautes : " + rally.OutCount, textStyle);
-            GUILayout.Label("Filet : " + rally.NetCount, textStyle);
-            GUILayout.Label("Non jouées : " + rally.MissCount, textStyle);
+            GUILayout.Label("Toi " + rally.PlayerPoints + " — " + rally.OpponentPoints + " Adversaire", titleStyle);
+            GUILayout.Label("Niveau : " + DifficultyName(rally.Difficulty) + " (D pour changer)", textStyle);
+            GUILayout.Label("Échange en cours : " + rally.RallyShots + " frappes", textStyle);
+            GUILayout.Label("Plus long échange : " + rally.LongestRally + " frappes", textStyle);
             GUILayout.EndArea();
         }
 
@@ -94,21 +93,13 @@ namespace TennisPhone
             Color color;
             switch (rally.LastOutcome)
             {
-                case RallyController.Outcome.In:
-                    title = "DANS LE COURT";
+                case RallyController.Outcome.PointWon:
+                    title = "POINT POUR TOI";
                     color = new Color(0.45f, 0.95f, 0.55f);
                     break;
-                case RallyController.Outcome.Out:
-                    title = "FAUTE";
+                case RallyController.Outcome.PointLost:
+                    title = "POINT PERDU";
                     color = new Color(1f, 0.5f, 0.4f);
-                    break;
-                case RallyController.Outcome.Net:
-                    title = "FILET";
-                    color = new Color(1f, 0.5f, 0.4f);
-                    break;
-                case RallyController.Outcome.Missed:
-                    title = "MANQUÉE";
-                    color = new Color(1f, 0.75f, 0.4f);
                     break;
                 default:
                     title = "DANS LE VIDE";
@@ -123,6 +114,16 @@ namespace TennisPhone
             GUI.Label(new Rect(area.x, area.y + 6f, area.width, 58f), title, hugeStyle);
             GUI.Label(new Rect(area.x, area.y + 66f, area.width, 34f), rally.LastOutcomeDetail, centeredStyle);
             GUI.color = previous;
+        }
+
+        static string DifficultyName(AiDifficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case AiDifficulty.Easy: return "facile";
+                case AiDifficulty.Hard: return "difficile";
+                default: return "normal";
+            }
         }
 
         void DrawTiming(Rect area)

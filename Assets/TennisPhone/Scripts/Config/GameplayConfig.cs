@@ -190,7 +190,7 @@ namespace TennisPhone
 
         [Header("Joueur : déplacement automatique")]
         [Tooltip("Vitesse de course (m/s).")]
-        [Min(0.5f)] public float playerMoveSpeed = 7.5f;
+        [Min(0.5f)] public float playerMoveSpeed = 5.5f;
 
         [Tooltip("Distance maximale (m) entre le joueur et la balle pour pouvoir la frapper.")]
         [Min(0.3f)] public float playerReach = 1.5f;
@@ -198,27 +198,87 @@ namespace TennisPhone
         [Tooltip("Hauteur (m) à laquelle le joueur cherche à frapper la balle après le rebond.")]
         [Min(0.2f)] public float contactHeight = 0.9f;
 
+        [Tooltip("Distance maximale (m) derrière la ligne de fond où la balle est frappée. "
+            + "Une balle longue est prise plus tôt, en montée, plutôt que de reculer davantage.")]
+        [Min(0f)] public float contactMaxDepth = 2f;
+
         [Tooltip("Écart latéral (m) entre le joueur et la balle au moment de la frappe.")]
         [Min(0f)] public float playerSideOffset = 0.55f;
 
         [Tooltip("Distance (m) derrière la ligne de fond où le joueur se replace.")]
         [Min(0f)] public float playerHomeDepth = 0.8f;
 
-        [Header("Lanceur de balles (entraînement)")]
-        [Tooltip("Délai (s) entre la fin d'un échange et la balle suivante.")]
+        [Header("Engagement (en attendant le service)")]
+        [Tooltip("Délai (s) entre la fin d'un point et l'engagement suivant.")]
         [Min(0.2f)] public float feederInterval = 1.5f;
 
-        [Tooltip("Vitesse (m/s) des balles envoyées.")]
+        [Tooltip("Vitesse (m/s) de la balle d'engagement.")]
         [Min(5f)] public float feederSpeed = 16f;
 
-        [Tooltip("Profondeur minimale (m depuis le filet) du rebond des balles envoyées.")]
+        [Tooltip("Profondeur minimale (m depuis le filet) du rebond de la balle d'engagement.")]
         [Min(1f)] public float feederDepthMin = 6.5f;
 
-        [Tooltip("Profondeur maximale (m depuis le filet) du rebond des balles envoyées.")]
+        [Tooltip("Profondeur maximale (m depuis le filet) du rebond de la balle d'engagement.")]
         [Min(1f)] public float feederDepthMax = 10f;
 
-        [Tooltip("Demi-largeur (m) de la zone visée par le lanceur.")]
+        [Tooltip("Demi-largeur (m) de la zone visée à l'engagement.")]
         [Min(0f)] public float feederHalfWidth = 3f;
+
+        [Header("Adversaire")]
+        [Tooltip("Niveau de l'adversaire au lancement. La touche D le change en jeu.")]
+        public AiDifficulty aiDifficulty = AiDifficulty.Normal;
+
+        public AiLevel aiEasy = new AiLevel
+        {
+            reactionDelay = 0.6f,
+            positionError = 1f,
+            speedMultiplier = 0.7f,
+            shotSpeedMin = 14f,
+            shotSpeedMax = 18f,
+            aimErrorDegrees = 12f,
+            sloppyShotRate = 0.45f,
+            settleTime = 0.45f,
+            stretchedErrorFactor = 1.5f,
+            awayProbability = 0.4f,
+        };
+
+        public AiLevel aiNormal = new AiLevel
+        {
+            reactionDelay = 0.33f,
+            positionError = 0.5f,
+            speedMultiplier = 0.85f,
+            shotSpeedMin = 16f,
+            shotSpeedMax = 22f,
+            aimErrorDegrees = 9f,
+            sloppyShotRate = 0.3f,
+            settleTime = 0.3f,
+            stretchedErrorFactor = 1.5f,
+            awayProbability = 0.6f,
+        };
+
+        public AiLevel aiHard = new AiLevel
+        {
+            reactionDelay = 0.12f,
+            positionError = 0.2f,
+            speedMultiplier = 0.97f,
+            shotSpeedMin = 19f,
+            shotSpeedMax = 26f,
+            aimErrorDegrees = 6f,
+            sloppyShotRate = 0.15f,
+            settleTime = 0.2f,
+            stretchedErrorFactor = 1.5f,
+            awayProbability = 0.8f,
+        };
+
+        public AiLevel GetAiLevel(AiDifficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case AiDifficulty.Easy: return aiEasy;
+                case AiDifficulty.Hard: return aiHard;
+                default: return aiNormal;
+            }
+        }
 
         public CourtDimensions ToCourt()
         {

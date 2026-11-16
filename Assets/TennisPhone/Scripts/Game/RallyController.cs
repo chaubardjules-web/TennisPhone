@@ -3,9 +3,10 @@ using UnityEngine;
 namespace TennisPhone
 {
     /// <summary>
-    /// Étape c : un lanceur envoie des balles, le joueur se place tout seul et renvoie la balle
-    /// d'un swing. Gère la balle (vol, rebonds, filet, limites du court), le placement automatique
-    /// du joueur et la frappe (timing, direction, puissance, effet).
+    /// Déroulement d'un échange entre le joueur et l'adversaire.
+    /// Gère la balle (vol, rebonds, filet, limites du court), le placement automatique du joueur,
+    /// sa frappe (timing, direction, puissance, effet), l'adversaire et l'attribution du point.
+    /// Le joueur est du côté z négatif, l'adversaire du côté z positif.
     /// </summary>
     [RequireComponent(typeof(RacketInput))]
     public sealed class RallyController : MonoBehaviour
@@ -13,17 +14,16 @@ namespace TennisPhone
         public enum Outcome
         {
             None,
-            In,
-            Out,
-            Net,
-            Missed,
+            PointWon,
+            PointLost,
             Whiff,
         }
 
-        enum Hitter
+        /// <summary>Camp d'un joueur : signe de sa coordonnée z.</summary>
+        enum Side
         {
-            Feeder,
-            Player,
+            Player = -1,
+            Opponent = 1,
         }
 
         // La balle est affichée plus grosse que nature pour rester lisible de loin.
@@ -37,25 +37,30 @@ namespace TennisPhone
         GameplayConfig config;
         CourtDimensions court;
         BallSettings ballSettings;
+        OpponentAi opponent;
 
         Transform ballVisual;
         Transform ballShadow;
         Transform playerVisual;
         Transform racketVisual;
+        Transform opponentVisual;
+        Transform opponentRacket;
         Transform landingMarker;
         Renderer landingRenderer;
 
         BallState ball;
         bool ballActive;
         bool ballDead;
-        Hitter lastHitter;
+        Side lastHitter;
         int bounceCount;
+        int rallyShots;
         double simTime;
         double launchTime;
         double deadTime;
         double nextFeedTime;
         float accumulator;
 
+        // Balle à jouer par le camp qui reçoit : où et quand la frapper.
         bool hasContact;
         Vector3 contactPoint;
         double contactTime;
@@ -63,6 +68,7 @@ namespace TennisPhone
 
         Vector3 playerPosition;
         Vector3 playerTarget;
+        float opponentSwingTime = -10f;
 
         bool autoSwingPlanned;
         float autoSwingOffset;
@@ -91,25 +97,31 @@ namespace TennisPhone
 
         public SwingEvent LastSwing => lastHitSwing;
 
-        public int Hits { get; private set; }
+        public int PlayerPoints { get; private set; }
 
-        public int InCount { get; private set; }
+        public int OpponentPoints { get; private set; }
 
-        public int OutCount { get; private set; }
+        /// <summary>Nombre de frappes de l'échange en cours ou du dernier échange.</summary>
+        public int RallyShots => rallyShots;
 
-        public int NetCount { get; private set; }
+        public int LongestRally { get; private set; }
 
-        public int MissCount { get; private set; }
+        /// <summary>Frappes de l'adversaire depuis le lancement, et celles qui ont fini en faute.</summary>
+        public int OpponentShots { get; private set; }
 
-        /// <summary>Mode démonstration : le jeu frappe tout seul (touche T).</summary>
+        public int OpponentFaults { get; private set; }
+
+        public AiDifficulty Difficulty { get; set; }
+
+        /// <summary>Mode démonstration : le jeu frappe tout seul à la place du joueur (touche T).</summary>
         public bool AutoSwing { get; set; }
 
         public float TimingWindow => config.timingWindow;
 
         public Vector3 PlayerPosition => playerPosition;
 
-        /// <summary>Temps restant avant l'instant idéal de frappe, en secondes (NaN s'il n'y a pas de balle à jouer).</summary>
-        public float TimeToContact => hasContact && lastHitter == Hitter.Feeder ? (float)(contactTime - simTime) : float.NaN;
+        /// <summary>Temps restant avant l'instant idéal de frappe du joueur, en secondes (NaN s'il n'a pas de balle à jouer).</summary>
+        public float TimeToContact => hasContact && lastHitter == Side.Opponent ? (float)(contactTime - simTime) : float.NaN;
 
         void Awake()
         {
@@ -122,12 +134,15 @@ namespace TennisPhone
             config = input.Config;
             court = config.ToCourt();
             ballSettings = config.ToBallSettings();
+            Difficulty = config.aiDifficulty;
 
             CourtBuilder.Build(court);
             BuildActors();
 
-            playerPosition = HomePosition();
+            playerPosition = HomePosition(Side.Player);
             playerTarget = playerPosition;
+            opponent = new OpponentAi(System.Environment.TickCount);
+            opponent.Reset(HomePosition(Side.Opponent));
             nextFeedTime = 1.5;
         }
 
@@ -157,18 +172,31 @@ namespace TennisPhone
             ballVisual.gameObject.SetActive(false);
             ballShadow.gameObject.SetActive(false);
 
-            playerVisual = new GameObject("Joueur").transform;
-            CourtBuilder.Primitive(PrimitiveType.Capsule, playerVisual, "Corps", new Vector3(0f, 0.75f, 0f),
-                Quaternion.identity, new Vector3(0.45f, 0.75f, 0.35f), new Color(0.2f, 0.45f, 0.85f));
-            CourtBuilder.Primitive(PrimitiveType.Sphere, playerVisual, "Tête", new Vector3(0f, 1.65f, 0f),
-                Quaternion.identity, Vector3.one * 0.3f, new Color(0.95f, 0.8f, 0.65f));
-
+            playerVisual = BuildCharacter("Joueur", new Color(0.2f, 0.45f, 0.85f));
             racketVisual = RacketModel.Build(out Renderer _);
+            opponentVisual = BuildCharacter("Adversaire", new Color(0.9f, 0.45f, 0.2f));
+            opponentRacket = RacketModel.Build(out Renderer _);
+            opponentRacket.name = "Raquette de l'adversaire";
         }
 
-        Vector3 HomePosition()
+        static Transform BuildCharacter(string name, Color color)
         {
-            return new Vector3(0f, 0f, -(court.HalfLength + config.playerHomeDepth));
+            Transform root = new GameObject(name).transform;
+            CourtBuilder.Primitive(PrimitiveType.Capsule, root, "Corps", new Vector3(0f, 0.75f, 0f),
+                Quaternion.identity, new Vector3(0.45f, 0.75f, 0.35f), color);
+            CourtBuilder.Primitive(PrimitiveType.Sphere, root, "Tête", new Vector3(0f, 1.65f, 0f),
+                Quaternion.identity, Vector3.one * 0.3f, new Color(0.95f, 0.8f, 0.65f));
+            return root;
+        }
+
+        Vector3 HomePosition(Side side)
+        {
+            return new Vector3(0f, 0f, (int)side * (court.HalfLength + config.playerHomeDepth));
+        }
+
+        static Side Other(Side side)
+        {
+            return side == Side.Player ? Side.Opponent : Side.Player;
         }
 
         void Update()
@@ -177,12 +205,23 @@ namespace TennisPhone
             court = config.ToCourt();
             ballSettings = config.ToBallSettings();
 
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                AutoSwing = !AutoSwing;
+            }
+
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                Difficulty = (AiDifficulty)(((int)Difficulty + 1) % 3);
+            }
+
             accumulator += Mathf.Min(Time.deltaTime, 0.1f);
             while (accumulator >= BallPhysics.TimeStep)
             {
                 accumulator -= BallPhysics.TimeStep;
                 simTime += BallPhysics.TimeStep;
                 StepBall();
+                StepOpponent(BallPhysics.TimeStep);
             }
 
             if (!ballActive && simTime >= nextFeedTime)
@@ -190,19 +229,16 @@ namespace TennisPhone
                 Feed();
             }
 
-            if (Input.GetKeyDown(KeyCode.T))
-            {
-                AutoSwing = !AutoSwing;
-            }
-
             if (AutoSwing)
             {
                 UpdateAutoSwing();
             }
 
-            MovePlayer();
+            playerPosition = Vector3.MoveTowards(playerPosition, playerTarget, config.playerMoveSpeed * Time.deltaTime);
             UpdateVisuals();
         }
+
+        // ---------------------------------------------------------------- Balle
 
         void StepBall()
         {
@@ -218,20 +254,16 @@ namespace TennisPhone
             }
             else if (ballEvent == BallEvent.Net && !ballDead)
             {
-                if (lastHitter == Hitter.Player)
-                {
-                    NetCount++;
-                    SetOutcome(Outcome.Net, "La balle reste dans le filet.");
-                }
-
-                KillBall();
+                AwardPoint(Other(lastHitter), lastHitter == Side.Player
+                    ? "Ta balle reste dans le filet."
+                    : "L'adversaire met la balle dans le filet.");
             }
 
             bool lost = Mathf.Abs(ball.Position.x) > 25f || Mathf.Abs(ball.Position.z) > 35f
                 || simTime - launchTime > MaxFlightTime;
             if (lost && !ballDead)
             {
-                KillBall();
+                AwardPoint(Other(lastHitter), "Balle perdue.");
             }
 
             if (ballDead && simTime - deadTime > DeadBallLinger)
@@ -249,41 +281,39 @@ namespace TennisPhone
             }
 
             bounceCount++;
-            if (lastHitter == Hitter.Player)
+            Side receiver = Other(lastHitter);
+
+            if (bounceCount == 1)
             {
-                if (bounceCount == 1)
+                bool inside = ball.Position.z * (int)receiver > 0f && court.IsInside(ball.Position.x, ball.Position.z);
+                if (lastHitter == Side.Player)
                 {
-                    bool inside = ball.Position.z > 0f && court.IsInside(ball.Position.x, ball.Position.z);
                     ShowLanding(ball.Position, inside);
-                    if (inside)
+                }
+
+                if (!inside)
+                {
+                    string detail;
+                    if (ball.Position.z * (int)receiver <= 0f)
                     {
-                        InCount++;
-                        SetOutcome(Outcome.In, "Bonne balle, à "
-                            + DistanceToNearestLine(ball.Position).ToString("F1") + " m de la ligne.");
+                        detail = lastHitter == Side.Player ? "Ta balle retombe dans ton camp." : "La balle de l'adversaire retombe dans son camp.";
                     }
                     else
                     {
-                        OutCount++;
-                        SetOutcome(Outcome.Out, ball.Position.z <= 0f
-                            ? "La balle retombe dans ton camp."
-                            : "Faute de " + DistanceOutside(ball.Position).ToString("F1") + " m.");
+                        string distance = DistanceOutside(ball.Position).ToString("F1") + " m";
+                        detail = lastHitter == Side.Player ? "Faute : balle dehors de " + distance + "." : "Faute de l'adversaire : dehors de " + distance + ".";
                     }
+
+                    AwardPoint(receiver, detail);
                 }
-
-                // L'échange s'arrête au rebond tant qu'il n'y a pas d'adversaire (étape d).
-                KillBall();
             }
-            else if (bounceCount >= 2)
+            else
             {
-                MissCount++;
-                SetOutcome(Outcome.Missed, "Balle non jouée : deux rebonds.");
-                KillBall();
+                // Deuxième rebond : celui qui devait jouer la balle perd le point.
+                AwardPoint(lastHitter, receiver == Side.Player
+                    ? "Balle non jouée : deux rebonds."
+                    : "L'adversaire est débordé.");
             }
-        }
-
-        float DistanceToNearestLine(Vector3 position)
-        {
-            return Mathf.Min(court.HalfWidth - Mathf.Abs(position.x), court.HalfLength - Mathf.Abs(position.z));
         }
 
         float DistanceOutside(Vector3 position)
@@ -293,18 +323,40 @@ namespace TennisPhone
             return Mathf.Sqrt(lateral * lateral + depth * depth);
         }
 
-        void KillBall()
+        void AwardPoint(Side winner, string detail)
         {
+            if (winner == Side.Player)
+            {
+                PlayerPoints++;
+            }
+            else
+            {
+                OpponentPoints++;
+            }
+
+            if (lastHitter == Side.Opponent && winner == Side.Player && bounceCount <= 1)
+            {
+                // Point gagné sur une faute directe de l'adversaire (filet ou dehors).
+                OpponentFaults++;
+            }
+
+            LongestRally = Mathf.Max(LongestRally, rallyShots);
+            SetOutcome(winner == Side.Player ? Outcome.PointWon : Outcome.PointLost, detail);
+
             ballDead = true;
             deadTime = simTime;
             hasContact = false;
-            playerTarget = HomePosition();
+            playerTarget = HomePosition(Side.Player);
+            opponent.StopTracking();
         }
 
-        /// <summary>Le lanceur envoie une nouvelle balle vers le camp du joueur.</summary>
+        /// <summary>
+        /// Engagement : l'adversaire met la balle en jeu depuis le fond de son camp.
+        /// Remplacé par un vrai service à l'étape e.
+        /// </summary>
         void Feed()
         {
-            var start = new Vector3(Random.Range(-2.5f, 2.5f), 1f, court.HalfLength - 0.5f);
+            Vector3 start = opponent.Position + new Vector3(0.4f, 1f, -0.3f);
             var target = new Vector3(
                 Random.Range(-config.feederHalfWidth, config.feederHalfWidth),
                 0f,
@@ -316,21 +368,66 @@ namespace TennisPhone
             ball = new BallState { Position = start, Velocity = solution.Velocity, Spin = solution.Spin };
             ballActive = true;
             ballDead = false;
-            lastHitter = Hitter.Feeder;
+            rallyShots = 0;
+            landingMarker.gameObject.SetActive(false);
+            opponentSwingTime = Time.unscaledTime;
+
+            OnBallHit(Side.Opponent);
+        }
+
+        /// <summary>La balle vient d'être frappée par ce camp : l'autre camp se prépare à la jouer.</summary>
+        void OnBallHit(Side hitter)
+        {
+            lastHitter = hitter;
             bounceCount = 0;
             launchTime = simTime;
-            landingMarker.gameObject.SetActive(false);
+            rallyShots++;
 
-            PlanContact();
+            Side receiver = Other(hitter);
+            hasContact = PredictContact(receiver, out contactPoint, out double delay);
+            contactTime = simTime + delay;
+
+            if (receiver == Side.Player)
+            {
+                opponent.StopTracking();
+                if (hasContact)
+                {
+                    // Le joueur se place à côté de la balle, du côté le plus proche de lui.
+                    hittingSide = contactPoint.x >= playerPosition.x ? 1f : -1f;
+                    playerTarget = new Vector3(
+                        contactPoint.x - hittingSide * config.playerSideOffset,
+                        0f,
+                        Mathf.Min(contactPoint.z - 0.25f, -1.5f));
+                }
+                else
+                {
+                    playerTarget = HomePosition(Side.Player);
+                }
+            }
+            else
+            {
+                playerTarget = HomePosition(Side.Player);
+                if (hasContact)
+                {
+                    opponent.OnIncoming(contactPoint, contactTime, simTime, config.GetAiLevel(Difficulty));
+                }
+                else
+                {
+                    // Balle annoncée dans le filet ou dehors : l'adversaire la laisse passer.
+                    opponent.StopTracking();
+                }
+            }
         }
 
         /// <summary>
-        /// Prédit où et quand le joueur doit frapper : après le premier rebond, quand la balle
-        /// redescend à la hauteur de frappe (ou à son sommet si elle ne monte pas jusque-là).
+        /// Prédit où et quand le camp qui reçoit doit frapper : après un premier rebond valable dans
+        /// son camp, quand la balle redescend à la hauteur de frappe (ou à son sommet si elle ne
+        /// monte pas jusque-là). Renvoie false si la balle n'est pas jouable.
         /// </summary>
-        void PlanContact()
+        bool PredictContact(Side receiver, out Vector3 point, out double delay)
         {
-            hasContact = false;
+            point = default;
+            delay = 0.0;
             BallState state = ball;
             float time = 0f;
             bool bounced = false;
@@ -342,88 +439,45 @@ namespace TennisPhone
 
                 if (ballEvent == BallEvent.Net)
                 {
-                    return;
+                    return false;
                 }
 
                 if (ballEvent == BallEvent.Bounce)
                 {
-                    if (bounced || state.Position.z >= 0f)
+                    bool inside = state.Position.z * (int)receiver > 0f && court.IsInside(state.Position.x, state.Position.z);
+                    if (bounced || !inside)
                     {
-                        return;
+                        return false;
                     }
 
                     bounced = true;
                 }
-                else if (bounced && state.Velocity.y <= 0f && state.Position.y <= config.contactHeight)
+                else if (bounced)
                 {
                     // La balle redescend sous la hauteur de frappe. Si son sommet était déjà plus bas,
                     // cette condition est vraie dès le sommet.
-                    hasContact = true;
-                    contactPoint = state.Position;
-                    contactTime = simTime + time;
-                    break;
+                    bool comfortable = state.Velocity.y <= 0f && state.Position.y <= config.contactHeight;
+
+                    // Balle longue : on la prend plus tôt plutôt que de reculer trop loin.
+                    bool tooDeep = Mathf.Abs(state.Position.z) >= court.HalfLength + config.contactMaxDepth;
+
+                    if (comfortable || tooDeep)
+                    {
+                        point = state.Position;
+                        delay = time;
+                        return true;
+                    }
                 }
             }
 
-            if (!hasContact)
-            {
-                return;
-            }
-
-            // Le joueur se place à côté de la balle, du côté le plus proche de lui.
-            hittingSide = contactPoint.x >= playerPosition.x ? 1f : -1f;
-            playerTarget = new Vector3(
-                contactPoint.x - hittingSide * config.playerSideOffset,
-                0f,
-                Mathf.Min(contactPoint.z - 0.25f, -1.5f));
+            return false;
         }
 
-        /// <summary>
-        /// Mode démonstration (touche T) : le jeu frappe tout seul, avec un timing, une puissance
-        /// et un effet tirés au hasard. Sert à voir les trajectoires sans téléphone.
-        /// </summary>
-        void UpdateAutoSwing()
-        {
-            if (!ballActive || ballDead || lastHitter != Hitter.Feeder || !hasContact)
-            {
-                autoSwingPlanned = false;
-                return;
-            }
-
-            if (!autoSwingPlanned)
-            {
-                autoSwingPlanned = true;
-                autoSwingOffset = Random.Range(-0.8f, 0.8f) * config.timingWindow;
-            }
-
-            if (simTime < contactTime + autoSwingOffset)
-            {
-                return;
-            }
-
-            autoSwingPlanned = false;
-            bool rightHanded = config.handedness == Handedness.Right;
-            float[] spins = { -0.9f, 0f, 0f, 0.9f };
-            OnSwing(new SwingEvent
-            {
-                Id = autoSwingId--,
-                Source = SwingSource.KeyboardMouse,
-                Side = (hittingSide > 0f) == rightHanded ? SwingSide.Forehand : SwingSide.Backhand,
-                Power = Random.Range(0.2f, 1f),
-                Spin = spins[Random.Range(0, spins.Length)],
-                PeakTimeSeconds = simTime,
-                AgeSeconds = 0f,
-            });
-        }
-
-        void MovePlayer()
-        {
-            playerPosition = Vector3.MoveTowards(playerPosition, playerTarget, config.playerMoveSpeed * Time.deltaTime);
-        }
+        // ---------------------------------------------------------------- Joueur
 
         void OnSwing(SwingEvent swing)
         {
-            if (!ballActive || ballDead || lastHitter != Hitter.Feeder || !hasContact)
+            if (!ballActive || ballDead || lastHitter != Side.Opponent || !hasContact)
             {
                 SetOutcome(Outcome.Whiff, "Swing dans le vide : pas de balle à jouer.");
                 return;
@@ -452,17 +506,11 @@ namespace TennisPhone
             lastHitTimingNormalized = timing / config.timingWindow;
             LastTimingSeconds = timing;
             HasLastHit = true;
-            Hits++;
 
-            ApplyShot(swing);
-
-            lastHitter = Hitter.Player;
-            bounceCount = 0;
-            hasContact = false;
-            launchTime = simTime;
-            playerTarget = HomePosition();
+            ApplyPlayerShot(swing);
             landingMarker.gameObject.SetActive(false);
             SetOutcome(Outcome.None, string.Empty);
+            OnBallHit(Side.Player);
 
             if (link != null)
             {
@@ -473,25 +521,100 @@ namespace TennisPhone
         /// <summary>La fin du geste a précisé l'effet (slice) : la trajectoire est recalculée en vol.</summary>
         void OnSwingRefined(SwingEvent swing)
         {
-            bool stillFlying = ballActive && !ballDead && lastHitter == Hitter.Player && bounceCount == 0;
+            bool stillFlying = ballActive && !ballDead && lastHitter == Side.Player && bounceCount == 0;
             if (!stillFlying || swing.Id != lastHitSwingId || simTime - lastHitTime > RefineWindow || ball.Position.z > -0.5f)
             {
                 return;
             }
 
             lastHitSwing = swing;
-            ApplyShot(swing);
+            ApplyPlayerShot(swing);
+
+            // La trajectoire a changé : l'adversaire relit la balle, sans compter une frappe de plus.
+            rallyShots--;
+            OnBallHit(Side.Player);
         }
 
-        void ApplyShot(SwingEvent swing)
+        void ApplyPlayerShot(SwingEvent swing)
         {
-            ShotPlanner.Plan plan = ShotPlanner.Build(swing, lastHitTimingNormalized, 1, config);
+            ShotPlanner.Plan plan = ShotPlanner.Build(swing, lastHitTimingNormalized, (int)Side.Opponent, config);
             ShotSolution solution = ShotSolver.Solve(ball.Position, plan.Target, plan.Speed, plan.SpinRate,
                 plan.NetMargin, ballSettings, court);
             ball.Velocity = solution.Velocity;
             ball.Spin = solution.Spin;
             LastShotSpeed = solution.Speed;
         }
+
+        /// <summary>
+        /// Mode démonstration (touche T) : le jeu frappe tout seul, avec un timing, une puissance
+        /// et un effet tirés au hasard. Sert à voir des échanges sans téléphone.
+        /// </summary>
+        void UpdateAutoSwing()
+        {
+            if (!ballActive || ballDead || lastHitter != Side.Opponent || !hasContact)
+            {
+                autoSwingPlanned = false;
+                return;
+            }
+
+            if (!autoSwingPlanned)
+            {
+                autoSwingPlanned = true;
+                // Timing le plus souvent bon, parfois franchement décalé, comme un vrai joueur.
+                autoSwingOffset = (Random.Range(-1.1f, 1.1f) + Random.Range(-1.1f, 1.1f)) * 0.5f * config.timingWindow;
+            }
+
+            if (simTime < contactTime + autoSwingOffset)
+            {
+                return;
+            }
+
+            autoSwingPlanned = false;
+            bool rightHanded = config.handedness == Handedness.Right;
+            float[] spins = { -0.9f, 0f, 0f, 0.9f };
+            OnSwing(new SwingEvent
+            {
+                Id = autoSwingId--,
+                Source = SwingSource.KeyboardMouse,
+                Side = (hittingSide > 0f) == rightHanded ? SwingSide.Forehand : SwingSide.Backhand,
+                Power = Random.Range(0.2f, 1f),
+                Spin = spins[Random.Range(0, spins.Length)],
+                PeakTimeSeconds = simTime,
+                AgeSeconds = 0f,
+            });
+        }
+
+        // ---------------------------------------------------------------- Adversaire
+
+        void StepOpponent(float deltaTime)
+        {
+            AiLevel level = config.GetAiLevel(Difficulty);
+            opponent.Move(simTime, deltaTime, HomePosition(Side.Opponent), config.playerMoveSpeed,
+                config.playerSideOffset, level);
+
+            bool ballToPlay = ballActive && !ballDead && lastHitter == Side.Player && hasContact && bounceCount == 1;
+            if (!ballToPlay || simTime < contactTime)
+            {
+                return;
+            }
+
+            // Une seule tentative par balle : s'il n'y arrive pas, la balle rebondit une seconde fois.
+            hasContact = false;
+            if (!opponent.CanReach(ball.Position, config.playerSideOffset, config.playerReach))
+            {
+                return;
+            }
+
+            bool stretched = opponent.IsStretched(simTime, config.playerSideOffset, level);
+            AiShot shot = opponent.ChooseShot(ball.Position, playerPosition, stretched, level, config, ballSettings, court);
+            ball.Velocity = shot.Solution.Velocity;
+            ball.Spin = shot.Solution.Spin;
+            OpponentShots++;
+            opponentSwingTime = Time.unscaledTime;
+            OnBallHit(Side.Opponent);
+        }
+
+        // ---------------------------------------------------------------- Affichage
 
         void SetOutcome(Outcome outcome, string detail)
         {
@@ -522,6 +645,14 @@ namespace TennisPhone
             // La raquette est tenue du côté où la balle arrive, à hauteur de hanche.
             Vector3 hand = playerPosition + new Vector3(hittingSide * 0.35f, 0.95f, 0.15f);
             racketVisual.SetPositionAndRotation(hand, input.RacketRotation);
+
+            // L'adversaire regarde vers le joueur ; sa raquette balaie brièvement quand il frappe.
+            opponentVisual.position = opponent.Position;
+            float swingProgress = Mathf.Clamp01((Time.unscaledTime - opponentSwingTime) / 0.3f);
+            float sweep = Mathf.Lerp(-70f, 70f, Mathf.SmoothStep(0f, 1f, swingProgress)) * -opponent.HittingSide;
+            Vector3 opponentHand = opponent.Position + new Vector3(opponent.HittingSide * 0.35f, 0.95f, -0.15f);
+            opponentRacket.SetPositionAndRotation(opponentHand,
+                Quaternion.Euler(0f, 180f + (swingProgress < 1f ? sweep : 0f), 0f) * Quaternion.Euler(-55f, 0f, 0f));
         }
     }
 }

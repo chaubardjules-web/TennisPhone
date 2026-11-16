@@ -66,9 +66,10 @@ MonoBehaviour:
   liftSpeedFactor: 0.95
   sliceRpmMax: 2500
   sliceSpeedFactor: 0.85
-  playerMoveSpeed: 7.5
+  playerMoveSpeed: 5.5
   playerReach: 1.5
   contactHeight: 0.9
+  contactMaxDepth: 2
   playerSideOffset: 0.55
   playerHomeDepth: 0.8
   feederInterval: 1.5
@@ -76,3 +77,37 @@ MonoBehaviour:
   feederDepthMin: 6.5
   feederDepthMax: 10
   feederHalfWidth: 3
+  aiDifficulty: 1
+  aiEasy:
+    reactionDelay: 0.6
+    positionError: 1
+    speedMultiplier: 0.7
+    shotSpeedMin: 14
+    shotSpeedMax: 18
+    aimErrorDegrees: 12
+    sloppyShotRate: 0.45
+    stretchedErrorFactor: 1.5
+    settleTime: 0.45
+    awayProbability: 0.4
+  aiNormal:
+    reactionDelay: 0.33
+    positionError: 0.5
+    speedMultiplier: 0.85
+    shotSpeedMin: 16
+    shotSpeedMax: 22
+    aimErrorDegrees: 9
+    sloppyShotRate: 0.3
+    stretchedErrorFactor: 1.5
+    settleTime: 0.3
+    awayProbability: 0.6
+  aiHard:
+    reactionDelay: 0.12
+    positionError: 0.2
+    speedMultiplier: 0.97
+    shotSpeedMin: 19
+    shotSpeedMax: 26
+    aimErrorDegrees: 6
+    sloppyShotRate: 0.15
+    stretchedErrorFactor: 1.5
+    settleTime: 0.2
+    awayProbability: 0.8
