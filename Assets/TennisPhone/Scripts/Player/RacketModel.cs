@@ -12,8 +12,8 @@ namespace TennisPhone
         public const float HeadDistance = 0.47f;
 
         /// <summary>Part de la couleur du cordage renvoyée sous la lumière, et part émise.</summary>
-        public const float StringBody = 0.8f;
-        public const float StringGlow = 0.3f;
+        public const float StringBody = 0.65f;
+        public const float StringGlow = 0.45f;
 
         public static Color StringColor => Palette.Cordage * StringBody;
 

@@ -297,6 +297,7 @@ namespace TennisPhone
 
         void OnPointEnded(PointInfo point)
         {
+            decorAnimator.Cheer();
             if (point.Result == ScoreEvent.Set)
             {
                 decorAnimator.Pulse();

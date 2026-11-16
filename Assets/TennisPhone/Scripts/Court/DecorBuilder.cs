@@ -18,14 +18,17 @@ namespace TennisPhone
 
         /// <summary>Émission d'un lampion au repos, en part de sa couleur.</summary>
         public float LanternGlow;
+
+        /// <summary>Spectateurs assis dans les tribunes : ils sautent de joie à la fin d'un point.</summary>
+        public readonly List<Transform> Spectators = new List<Transform>();
     }
 
     /// <summary>
     /// Décor du court, en deux ambiances.
     /// « Soir des lampions » : pré, haies, peupliers, tilleuls, gradins vides, parasols.
-    /// « Stade de jour » : tribunes en bois sur trois côtés, sièges de couleur, arbres, ciel bleu.
+    /// « Stade de jour » : tribunes en bois sur trois côtés, sièges de couleur, public, arbres, ciel bleu.
     /// Dans les deux : chaise d'arbitre, guirlandes de lampions, collines, nuages et ciel.
-    /// Aucun spectateur, aucun logo. Tout est fait de formes simples sans collision : rien ne
+    /// Aucun logo ; le public est fait de personnages originaux en formes simples. Tout est fait de formes simples sans collision : rien ne
     /// change à la physique de la balle.
     /// </summary>
     public static class DecorBuilder
@@ -47,7 +50,7 @@ namespace TennisPhone
             BuildHedges(Group(root, "Haies"), !day);
             if (day)
             {
-                BuildStadium(Group(root, "Tribunes"));
+                BuildStadium(decor, Group(root, "Tribunes"));
                 BuildStadiumTrees(Group(root, "Arbres"));
             }
             else
@@ -144,34 +147,41 @@ namespace TennisPhone
         // ---------------------------------------------------------------- Stade de jour
 
         /// <summary>
-        /// Tribunes en bois sur les deux côtés et au fond, sans spectateurs : des rangées de
-        /// sièges de couleur. La tribune du fond est sombre, pour que la balle s'en détache.
+        /// Tribunes en bois sur les deux côtés et au fond : des rangées de sièges de couleur,
+        /// et un public assis. La tribune du fond est sombre, pour que la balle s'en détache.
         /// </summary>
-        static void BuildStadium(Transform parent)
+        static void BuildStadium(DecorVisual decor, Transform parent)
         {
             var random = new System.Random(7);
             Color[] light = { Palette.BoisClair, Palette.BoisMiel };
             Color[] dark = { Palette.BoisFonce, Palette.TribuneSombre };
 
-            Stand(Group(parent, "Tribune de gauche"), new Vector3(-8.15f, 0f, 4f), Vector3.left, 36f, 5, 0f, 0.45f,
+            Stand(decor, Group(parent, "Tribune de gauche"), new Vector3(-8.15f, 0f, 4f), Vector3.left, 36f, 5, 0f, 0.45f,
                 light, Palette.BoisFonce, random);
-            Stand(Group(parent, "Tribune de droite"), new Vector3(8.15f, 0f, 4f), Vector3.right, 36f, 5, 0f, 0.45f,
+            Stand(decor, Group(parent, "Tribune de droite"), new Vector3(8.15f, 0f, 4f), Vector3.right, 36f, 5, 0f, 0.45f,
                 light, Palette.BoisFonce, random);
 
             // Posée sur un socle : seul ce qui dépasse de la haie du fond se voit.
-            Stand(Group(parent, "Tribune du fond"), new Vector3(0f, 0f, 26f), Vector3.forward, 30f, 6, 2.4f, 0.5f,
+            Stand(decor, Group(parent, "Tribune du fond"), new Vector3(0f, 0f, 26f), Vector3.forward, 30f, 6, 2.4f, 0.5f,
                 dark, Palette.TribuneSombre, random);
         }
 
         /// <summary>Une tribune : des marches qui montent vers l'extérieur, des sièges, un mur de fond.</summary>
         /// <param name="inner">Milieu du bord intérieur, au sol.</param>
         /// <param name="outward">Direction dans laquelle les marches montent.</param>
-        static void Stand(Transform parent, Vector3 inner, Vector3 outward, float length, int tiers, float baseHeight,
-            float rise, Color[] tierColors, Color wallColor, System.Random random)
+        static void Stand(DecorVisual decor, Transform parent, Vector3 inner, Vector3 outward, float length, int tiers,
+            float baseHeight, float rise, Color[] tierColors, Color wallColor, System.Random random)
         {
             const float depth = 0.9f;
             const float seatSpacing = 0.9f;
             Color[] seatColors = { Palette.Corail, Palette.Turquoise, Palette.CremeChaude, Palette.Rose, Palette.Lavande };
+
+            // Habits du public : jamais de jaune ni de vert, la balle reste seule dans ces teintes.
+            Color[] clothes =
+            {
+                Palette.Corail, Palette.Turquoise, Palette.CremeChaude, Palette.Rose, Palette.Lavande,
+                Palette.Framboise, Palette.Prune, Palette.Blanc, Palette.CielHaut, Palette.Encre,
+            };
 
             Quaternion rotation = Quaternion.LookRotation(outward);
             Vector3 along = rotation * Vector3.right;
@@ -202,6 +212,15 @@ namespace TennisPhone
                     Transform cushion = CourtBuilder.Primitive(PrimitiveType.Cube, parent, "Siège", position, rotation,
                         new Vector3(0.42f, 0.07f, 0.38f), color);
                     cushion.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                    // Deux sièges sur trois sont occupés ; le spectateur regarde le court.
+                    if (random.Next(3) != 0)
+                    {
+                        decor.Spectators.Add(CharacterModel.BuildSpectator(parent, position + Vector3.up * 0.035f, -outward,
+                            clothes[random.Next(clothes.Length)],
+                            CharacterModel.SkinTones[random.Next(CharacterModel.SkinTones.Length)],
+                            CharacterModel.HairTones[random.Next(CharacterModel.HairTones.Length)]));
+                    }
                 }
             }
 
@@ -466,13 +485,31 @@ namespace TennisPhone
         const float PulseDuration = 1.5f;
         const float PulseGlow = 1.6f;
 
+        const float CheerDuration = 1.4f;
+        const float CheerHeight = 0.14f;
+
         DecorVisual decor;
         float pulseStart = -10f;
         bool pulsing;
+        float[] seatHeights;
+        float cheerStart = -10f;
+        bool cheering;
 
         public void Init(DecorVisual visual)
         {
             decor = visual;
+            seatHeights = new float[decor.Spectators.Count];
+            for (int i = 0; i < seatHeights.Length; i++)
+            {
+                seatHeights[i] = decor.Spectators[i].localPosition.y;
+            }
+        }
+
+        /// <summary>Le public sautille pendant un instant (fin d'un point).</summary>
+        public void Cheer()
+        {
+            cheerStart = Time.time;
+            cheering = true;
         }
 
         /// <summary>Fait pulser la lumière de tous les lampions trois fois en 1,5 s.</summary>
@@ -494,6 +531,22 @@ namespace TennisPhone
             {
                 float angle = SwayDegrees * Mathf.Sin(2f * Mathf.PI * SwayFrequency * time + i * 1.7f);
                 decor.LanternPivots[i].localRotation = Quaternion.Euler(angle, 0f, angle * 0.6f);
+            }
+
+            if (cheering)
+            {
+                // Chaque spectateur sautille à son rythme ; le mouvement s'éteint doucement.
+                float cheer = (time - cheerStart) / CheerDuration;
+                cheering = cheer < 1f;
+                float strength = cheering ? 1f - cheer : 0f;
+                for (int i = 0; i < seatHeights.Length; i++)
+                {
+                    Transform spectator = decor.Spectators[i];
+                    Vector3 position = spectator.localPosition;
+                    position.y = seatHeights[i]
+                        + CheerHeight * strength * Mathf.Abs(Mathf.Sin((time - cheerStart) * (7f + i % 5) + i * 0.9f));
+                    spectator.localPosition = position;
+                }
             }
 
             if (!pulsing)

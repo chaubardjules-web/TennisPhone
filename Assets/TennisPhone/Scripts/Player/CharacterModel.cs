@@ -3,26 +3,42 @@ using UnityEngine;
 namespace TennisPhone
 {
     /// <summary>
-    /// Figurine articulée en bois peint, faite de formes simples : tête ovale sans visage,
-    /// bras et jambes reliés au corps. Les deux camps ont la même construction ; ils se
-    /// distinguent par la taille, les couleurs et la coiffe.
-    /// Origine entre les pieds, au sol. La figurine regarde vers +z ; celle de l'adversaire est
-    /// retournée. Aucun squelette : trois mouvements appliqués par le code (respiration, course,
+    /// Personnage de dessin animé, fait de formes simples : grosse tête ronde, deux yeux, des
+    /// joues roses, un corps compact, des bras reliés au corps et de grandes mains.
+    /// Dessin original : il ne reprend aucun personnage existant.
+    /// Les deux camps ont la même construction ; ils se distinguent par la taille, les couleurs
+    /// et la coiffe (casquette à l'envers pour le joueur, bandeau pour l'adversaire).
+    /// Origine entre les pieds, au sol. Le personnage regarde vers +z ; l'adversaire est
+    /// retourné. Aucun squelette : trois mouvements appliqués par le code (respiration, course,
     /// bras qui suit la raquette).
     /// </summary>
     public sealed class CharacterModel
     {
-        const float ShoulderWidth = 0.25f;
-        const float ShoulderHeight = 1.36f;
-        const float ArmMin = 0.4f;
-        const float ArmMax = 0.75f;
-        const float ArmThickness = 0.1f;
+        const float ShoulderWidth = 0.2f;
+        const float ShoulderHeight = 1.02f;
+        const float ArmMin = 0.18f;
+        const float ArmMax = 0.62f;
+        const float ArmThickness = 0.085f;
+        const float HandSize = 0.15f;
+        const float HeadHeight = 1.34f;
 
-        const float BreathHeight = 0.015f;
+        const float BreathHeight = 0.012f;
         const float BreathFrequency = 1.6f;
         const float RunLeanDegrees = 6f;
         const float RunBobHeight = 0.03f;
         const float RunBobFrequency = 3f;
+
+        /// <summary>Teintes de peau du public et des joueurs.</summary>
+        public static readonly Color[] SkinTones =
+        {
+            Palette.Hex(0xF3CDA6), Palette.Hex(0xE2B88A), Palette.Hex(0xC68E5F), Palette.Hex(0x9A6540), Palette.Hex(0x6B4429),
+        };
+
+        /// <summary>Couleurs de cheveux. Aucune dans les jaunes-verts de la balle.</summary>
+        public static readonly Color[] HairTones =
+        {
+            Palette.Hex(0x2B2422), Palette.Hex(0x5A3F2C), Palette.Hex(0x8A5A34), Palette.Hex(0xC98F58), Palette.Hex(0xB9B4AE), Palette.PruneNuit,
+        };
 
         readonly Transform root;
         readonly Transform body;
@@ -46,7 +62,7 @@ namespace TennisPhone
         {
             dominant = handedness == Handedness.Right ? 1f : -1f;
 
-            Color wood = Palette.BoisNaturel;
+            Color skin = opponent ? SkinTones[2] : SkinTones[1];
             Color jersey = opponent ? Palette.Lavande : Palette.Creme;
             Color team = opponent ? Palette.Prune : Palette.Framboise;
 
@@ -55,7 +71,11 @@ namespace TennisPhone
             {
                 // Un peu plus grand, et tourné vers le joueur.
                 root.localRotation = Quaternion.Euler(0f, 180f, 0f);
-                root.localScale = new Vector3(0.97f, 1.06f, 0.97f);
+                root.localScale = Vector3.one * 1.14f;
+            }
+            else
+            {
+                root.localScale = Vector3.one * 1.08f;
             }
 
             body = Group(root, "Corps");
@@ -63,53 +83,87 @@ namespace TennisPhone
 
             foreach (float side in new[] { -1f, 1f })
             {
-                Part(PrimitiveType.Cube, body, "Chaussure", new Vector3(side * 0.11f, 0.04f, 0.04f), new Vector3(0.11f, 0.08f, 0.26f), Palette.Creme);
-                Part(PrimitiveType.Capsule, body, "Jambe", new Vector3(side * 0.11f, 0.46f, 0f), new Vector3(0.15f, 0.4f, 0.15f), wood);
+                Part(PrimitiveType.Sphere, body, "Chaussure", new Vector3(side * 0.1f, 0.05f, 0.04f), new Vector3(0.15f, 0.1f, 0.27f), Palette.Creme);
+                Part(PrimitiveType.Capsule, body, "Jambe", new Vector3(side * 0.1f, 0.31f, 0f), new Vector3(0.13f, 0.26f, 0.13f), skin);
             }
 
-            Part(PrimitiveType.Cylinder, body, "Short", new Vector3(0f, 0.8f, 0f), new Vector3(0.4f, 0.12f, 0.28f), team);
-            Part(PrimitiveType.Capsule, upper, "Torse", new Vector3(0f, 1.14f, 0f), new Vector3(0.44f, 0.31f, 0.28f), jersey);
-            Part(PrimitiveType.Cylinder, upper, "Bande du maillot", new Vector3(0f, 1.2f, 0f), new Vector3(0.455f, 0.07f, 0.29f), team);
-            Part(PrimitiveType.Cylinder, upper, "Cou", new Vector3(0f, 1.47f, 0f), new Vector3(0.1f, 0.03f, 0.1f), wood);
-            Part(PrimitiveType.Capsule, upper, "Tête", new Vector3(0f, 1.615f, 0f), new Vector3(0.22f, 0.125f, 0.23f), wood);
+            Part(PrimitiveType.Sphere, body, "Short", new Vector3(0f, 0.6f, 0f), new Vector3(0.4f, 0.24f, 0.32f), team);
+            Part(PrimitiveType.Capsule, upper, "Torse", new Vector3(0f, 0.86f, 0f), new Vector3(0.4f, 0.27f, 0.31f), jersey);
+            Part(PrimitiveType.Cylinder, upper, "Bande du maillot", new Vector3(0f, 0.9f, 0f), new Vector3(0.415f, 0.055f, 0.322f), team);
 
-            // La coiffe donne l'orientation : il n'y a pas de visage.
+            BuildHead(upper, skin, opponent ? Palette.PruneNuit : HairTones[1]);
             if (opponent)
             {
-                Part(PrimitiveType.Sphere, upper, "Cheveux", new Vector3(0f, 1.7f, 0f), new Vector3(0.215f, 0.1f, 0.225f), Palette.PruneNuit);
-                Part(PrimitiveType.Cylinder, upper, "Bandeau", new Vector3(0f, 1.66f, 0f), new Vector3(0.228f, 0.022f, 0.238f), Palette.Creme);
+                Part(PrimitiveType.Cylinder, upper, "Bandeau", new Vector3(0f, HeadHeight + 0.12f, -0.02f), new Vector3(0.457f, 0.022f, 0.45f), Palette.Creme);
             }
             else
             {
                 // Casquette portée à l'envers : la visière pointe vers la caméra.
-                Part(PrimitiveType.Sphere, upper, "Casquette", new Vector3(0f, 1.685f, 0f), new Vector3(0.235f, 0.13f, 0.245f), team);
-                Part(PrimitiveType.Cube, upper, "Visière", new Vector3(0f, 1.66f, -0.15f), new Vector3(0.17f, 0.018f, 0.12f), team);
+                Part(PrimitiveType.Sphere, upper, "Casquette", new Vector3(0f, HeadHeight + 0.12f, 0f), new Vector3(0.49f, 0.3f, 0.47f), team);
+                Part(PrimitiveType.Cube, upper, "Visière", new Vector3(0f, HeadHeight + 0.1f, -0.27f), new Vector3(0.26f, 0.02f, 0.18f), team);
             }
 
-            racketArm = Part(PrimitiveType.Capsule, body, "Bras de la raquette", Vector3.zero, Vector3.one * ArmThickness, wood);
-            racketForearm = Part(PrimitiveType.Capsule, body, "Avant-bras de la raquette", Vector3.zero, Vector3.one * ArmThickness, wood);
-            racketHand = Part(PrimitiveType.Sphere, body, "Main de la raquette", Vector3.zero, Vector3.one * 0.11f, wood);
-            bracelet = Part(PrimitiveType.Cylinder, body, "Bracelet", Vector3.zero, new Vector3(0.115f, 0.025f, 0.115f), team);
-            freeArm = Part(PrimitiveType.Capsule, body, "Bras libre", Vector3.zero, Vector3.one * ArmThickness, wood);
-            freeHand = Part(PrimitiveType.Sphere, body, "Main libre", Vector3.zero, Vector3.one * 0.11f, wood);
+            racketArm = Part(PrimitiveType.Capsule, body, "Bras de la raquette", Vector3.zero, Vector3.one * ArmThickness, skin);
+            racketForearm = Part(PrimitiveType.Capsule, body, "Avant-bras de la raquette", Vector3.zero, Vector3.one * ArmThickness, skin);
+            racketHand = Part(PrimitiveType.Sphere, body, "Main de la raquette", Vector3.zero, Vector3.one * HandSize, skin);
+            bracelet = Part(PrimitiveType.Cylinder, body, "Bracelet", Vector3.zero, new Vector3(0.1f, 0.02f, 0.1f), team);
+            freeArm = Part(PrimitiveType.Capsule, body, "Bras libre", Vector3.zero, Vector3.one * ArmThickness, skin);
+            freeHand = Part(PrimitiveType.Sphere, body, "Main libre", Vector3.zero, Vector3.one * HandSize, skin);
 
-            Pose(root.TransformPoint(new Vector3(dominant * 0.35f, 0.95f, 0.15f)));
+            Pose(root.TransformPoint(new Vector3(dominant * 0.33f, 0.88f, 0.15f)));
         }
 
-        /// <summary>Figurine du joueur : maillot crème, accents framboise, casquette.</summary>
+        /// <summary>Le joueur : maillot crème, accents framboise, casquette à l'envers.</summary>
         public static CharacterModel BuildPlayer(Handedness handedness)
         {
             return new CharacterModel("Joueur", false, handedness);
         }
 
-        /// <summary>Figurine de l'adversaire : maillot lavande, accents prune, bandeau.</summary>
+        /// <summary>L'adversaire : maillot lavande, accents prune, bandeau.</summary>
         public static CharacterModel BuildOpponent()
         {
             return new CharacterModel("Adversaire", true, Handedness.Right);
         }
 
+        /// <summary>Tête ronde avec ses cheveux, ses yeux et ses joues. Sert aussi au public.</summary>
+        static void BuildHead(Transform parent, Color skin, Color hair)
+        {
+            Part(PrimitiveType.Sphere, parent, "Tête", new Vector3(0f, HeadHeight, 0f), new Vector3(0.44f, 0.42f, 0.44f), skin);
+
+            // Les cheveux couvrent le dessus, les côtés et l'arrière ; le visage reste dégagé.
+            Part(PrimitiveType.Sphere, parent, "Cheveux", new Vector3(0f, HeadHeight + 0.05f, -0.04f), new Vector3(0.47f, 0.4f, 0.44f), hair);
+
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Part(PrimitiveType.Sphere, parent, "Œil", new Vector3(side * 0.085f, HeadHeight + 0.02f, 0.196f), new Vector3(0.055f, 0.075f, 0.03f), Palette.Encre);
+                Part(PrimitiveType.Sphere, parent, "Joue", new Vector3(side * 0.135f, HeadHeight - 0.05f, 0.162f), new Vector3(0.07f, 0.045f, 0.03f), Palette.Rose);
+            }
+        }
+
         /// <summary>
-        /// Place la figurine et joue ses mouvements : respiration à l'arrêt, et en course le
+        /// Un spectateur assis, dans le même style que les joueurs, en trois formes : corps,
+        /// tête et cheveux. Renvoie sa racine, posée sur le siège et tournée vers « facing ».
+        /// </summary>
+        public static Transform BuildSpectator(Transform parent, Vector3 seat, Vector3 facing, Color clothes, Color skin, Color hair)
+        {
+            var spectator = new GameObject("Spectateur").transform;
+            spectator.SetParent(parent, false);
+            spectator.localPosition = seat;
+            spectator.localRotation = Quaternion.LookRotation(facing);
+
+            Transform torso = Part(PrimitiveType.Capsule, spectator, "Corps", new Vector3(0f, 0.25f, 0f), new Vector3(0.36f, 0.25f, 0.3f), clothes);
+            Transform head = Part(PrimitiveType.Sphere, spectator, "Tête", new Vector3(0f, 0.62f, 0.02f), new Vector3(0.34f, 0.32f, 0.34f), skin);
+            Transform top = Part(PrimitiveType.Sphere, spectator, "Cheveux", new Vector3(0f, 0.66f, -0.02f), new Vector3(0.36f, 0.3f, 0.34f), hair);
+            foreach (Transform part in new[] { torso, head, top })
+            {
+                part.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+
+            return spectator;
+        }
+
+        /// <summary>
+        /// Place le personnage et joue ses mouvements : respiration à l'arrêt, et en course le
         /// corps penché vers la direction du déplacement avec un petit rebond.
         /// </summary>
         /// <param name="position">Position des pieds.</param>
@@ -142,7 +196,7 @@ namespace TennisPhone
             Vector3 lift = upper.localPosition;
             Vector3 shoulder = new Vector3(dominant * ShoulderWidth, ShoulderHeight, 0f) + lift;
 
-            // La main suit la raquette ; la longueur du bras reste entre 0,40 et 0,75 m.
+            // La main suit la raquette, dans la limite de la longueur du bras.
             Vector3 reach = body.InverseTransformPoint(racketGrip) - shoulder;
             float length = Mathf.Clamp(reach.magnitude, ArmMin, ArmMax);
             Vector3 hand = shoulder + (reach.sqrMagnitude > 1e-6f ? reach.normalized : Vector3.down) * length;
@@ -151,17 +205,17 @@ namespace TennisPhone
             // torse, pour que le bras croise la poitrine au lieu de la traverser.
             float crossing = Mathf.Clamp01((0.05f - hand.x * dominant) / 0.3f);
             Vector3 elbow = (shoulder + hand) * 0.5f;
-            elbow.x += dominant * 0.06f * (1f - crossing);
-            elbow.z = Mathf.Lerp(elbow.z - 0.08f, 0.26f, crossing);
+            elbow.x += dominant * 0.07f * (1f - crossing);
+            elbow.z = Mathf.Lerp(elbow.z - 0.07f, 0.27f, crossing);
 
             Segment(racketArm, shoulder, elbow);
             Segment(racketForearm, elbow, hand);
             racketHand.localPosition = hand;
-            bracelet.localPosition = Vector3.Lerp(elbow, hand, 0.7f);
+            bracelet.localPosition = Vector3.Lerp(elbow, hand, 0.6f);
             bracelet.localRotation = racketForearm.localRotation;
 
             Vector3 freeShoulder = new Vector3(-dominant * ShoulderWidth, ShoulderHeight, 0f) + lift;
-            Vector3 freeRest = new Vector3(-dominant * 0.31f, 0.93f, 0.05f) + lift * 0.5f;
+            Vector3 freeRest = new Vector3(-dominant * 0.29f, 0.72f, 0.05f) + lift * 0.5f;
             Segment(freeArm, freeShoulder, freeRest);
             freeHand.localPosition = freeRest;
         }

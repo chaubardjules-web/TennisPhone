@@ -696,7 +696,7 @@ La page manette joue déjà son propre son d'impact sur l'iPhone (`controller.ht
 
 Choix de l'utilisateur le 2026-11-16, pendant l'implémentation : un stade en plein jour plutôt que le soir des lampions. C'est l'ambiance par défaut de la scène `Court`. Le soir décrit plus haut reste disponible : champ `Ambiance` du composant `MatchVisuals` (objet `Jeu`), valeurs `Jour` et `Soir`, avec le champ `Surface` (`Gazon` ou `Sarcelle`).
 
-L'utilisateur a demandé une copie de l'apparence d'un jeu de tennis familial sur console. Cette copie a été refusée. Le stade de jour ne reprend que des idées générales (un stade autour du court, du gazon, un ciel bleu, le score en haut au centre) dans un dessin propre : pas de personnages à tête ronde, pas de public, pas de murs verts, aucun logo.
+L'utilisateur a demandé une copie de l'apparence d'un jeu de tennis familial sur console. Cette copie a été refusée. Le stade de jour ne reprend que des idées générales (un stade autour du court, du gazon, un ciel bleu, le score en haut au centre) dans un dessin propre : aucun personnage, décor, logo ou élément d'interface de ce jeu n'est repris, et les murs ne sont pas verts.
 
 Ce qui change par rapport aux sections 2 à 7 :
 
@@ -715,6 +715,26 @@ Ce qui change par rapport aux sections 2 à 7 :
 | Ardoise de score | Haut gauche | Haut centre (dans les deux ambiances) |
 
 Les sièges sont tirés avec la graine 7, par groupes de quatre de même couleur, une place sur neuf vide. La chaise d'arbitre, les collines, le filet, les personnages, la balle, le HUD et les sons sont communs aux deux ambiances.
+
+**Personnages redessinés (demande de l'utilisateur, même jour).** Les figurines en bois de la section 4 n'ont pas plu ; l'utilisateur voulait des personnages proches de ceux du jeu de référence. Ces personnages-là ne sont pas repris. À la place, un personnage de dessin animé original, toujours en formes simples (`CharacterModel`) :
+
+| Pièce | Primitive | Position locale | Échelle | Couleur |
+|---|---|---|---|---|
+| Tête | Sphère | (0 ; 1,34 ; 0) | (0,44 ; 0,42 ; 0,44) | Peau |
+| Cheveux | Sphère | (0 ; 1,39 ; −0,04) | (0,47 ; 0,40 ; 0,44) | Brun `#5A3F2C` (joueur), prune nuit (adversaire) |
+| Yeux (2) | Sphère | (±0,085 ; 1,36 ; 0,196) | (0,055 ; 0,075 ; 0,03) | Encre |
+| Joues (2) | Sphère | (±0,135 ; 1,29 ; 0,162) | (0,07 ; 0,045 ; 0,03) | Rose |
+| Torse | Capsule | (0 ; 0,86 ; 0) | (0,40 ; 0,27 ; 0,31) | Maillot |
+| Bande du maillot | Cylindre | (0 ; 0,90 ; 0) | (0,415 ; 0,055 ; 0,322) | Couleur du camp |
+| Short | Sphère | (0 ; 0,60 ; 0) | (0,40 ; 0,24 ; 0,32) | Couleur du camp |
+| Jambes (2) | Capsule | (±0,10 ; 0,31 ; 0) | (0,13 ; 0,26 ; 0,13) | Peau |
+| Chaussures (2) | Sphère | (±0,10 ; 0,05 ; 0,04) | (0,15 ; 0,10 ; 0,27) | Crème |
+| Bras (bras et avant-bras) | Capsule | De l'épaule (±0,20 ; 1,02 ; 0) au coude, puis à la main | Ø 8,5 cm | Peau |
+| Mains (2) | Sphère | Au bout du bras | Ø 15 cm | Peau |
+
+Ce qui reste de la section 4 : les bras reliés au corps (pas de mains détachées), les couleurs des camps, la casquette à l'envers du joueur, le bandeau de l'adversaire, les trois mouvements par le code. Le bras de la raquette a un coude : en revers il passe devant le torse au lieu de le traverser. Racine à l'échelle 1,08 (joueur) et 1,14 (adversaire). Peau : `#E2B88A` (joueur), `#C68E5F` (adversaire).
+
+**Public (demande de l'utilisateur).** Deux sièges sur trois des tribunes du stade de jour sont occupés par un spectateur assis, dans le même style, en trois formes : corps (capsule), tête et cheveux (sphères). Habits tirés dans la palette (jamais de jaune ni de vert), cinq teintes de peau, six couleurs de cheveux, graine 7. Le public sautille pendant 1,4 s à la fin de chaque point (`DecorAnimator.Cheer`). Les matériaux partagés activent l'instanciation GPU : environ 2 000 objets pour 400 appels de dessin. Le soir des lampions reste sans public, comme dans la section 1.
 
 **Éclairage corrigé (les deux ambiances).** Les valeurs de la section 5.7 surexposaient la palette : le shader `Standard` additionne le soleil et la lumière d'ambiance, et le sol recevait 1,5 fois sa couleur (court turquoise vif au lieu de sarcelle). Valeurs retenues, pour que la somme reçue par le sol reste proche de 1 :
 
