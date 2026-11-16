@@ -201,6 +201,9 @@ namespace TennisPhone
             material.color = color;
             material.SetFloat("_Glossiness", 0.08f);
             material.SetFloat("_Metallic", 0f);
+
+            // Le décor répète des centaines de fois la même forme dans la même couleur.
+            material.enableInstancing = true;
             return material;
         }
 
