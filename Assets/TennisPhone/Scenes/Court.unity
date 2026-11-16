@@ -14,17 +14,17 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  m_FogMode: 3
+  m_Fog: 1
+  m_FogColor: {r: 0.8352941, g: 0.9098039, b: 0.9411765, a: 1}
+  m_FogMode: 1
   m_FogDensity: 0.01
-  m_LinearFogStart: 0
-  m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
-  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
-  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_LinearFogStart: 45
+  m_LinearFogEnd: 160
+  m_AmbientSkyColor: {r: 0.36078432, g: 0.41960785, b: 0.5019608, a: 1}
+  m_AmbientEquatorColor: {r: 0.43137255, g: 0.45490196, b: 0.47058824, a: 1}
+  m_AmbientGroundColor: {r: 0.2901961, g: 0.2901961, b: 0.2509804, a: 1}
   m_AmbientIntensity: 1
-  m_AmbientMode: 0
+  m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
@@ -35,7 +35,7 @@ RenderSettings:
   m_DefaultReflectionMode: 0
   m_DefaultReflectionResolution: 128
   m_ReflectionBounces: 1
-  m_ReflectionIntensity: 1
+  m_ReflectionIntensity: 0
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
   m_UseRadianceAmbientProbe: 0
@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &89077233
+--- !u!1 &72181935
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,9 +127,115 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 89077236}
-  - component: {fileID: 89077235}
-  - component: {fileID: 89077234}
+  - component: {fileID: 72181941}
+  - component: {fileID: 72181940}
+  - component: {fileID: 72181939}
+  - component: {fileID: 72181938}
+  - component: {fileID: 72181937}
+  - component: {fileID: 72181936}
+  m_Layer: 0
+  m_Name: Jeu
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &72181936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdb28dcb8fdd21c47ab07db8a3142ec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RallyHud
+--- !u!114 &72181937
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c923ff39dfcff6a47a9519356d75c854, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.MatchVisuals
+  ambiance: 0
+  surface: 1
+  sun: {fileID: 1705058825}
+  shaderTemplates:
+  - {fileID: 2100000, guid: fe5c49ddb1af4164182d3dc10bda3681, type: 2}
+  - {fileID: 2100000, guid: 251a3e1bf77cb7248bc9be3865802205, type: 2}
+  - {fileID: 2100000, guid: 96c179800c046214fa5307c4efbcd06a, type: 2}
+--- !u!114 &72181938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebf515016851c3648b8b7ade2bbd4a27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RallyController
+--- !u!114 &72181939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73ceaeeb4bfd27b40bb01506fc6adf84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RacketInput
+  config: {fileID: 11400000, guid: 02d3ac6c35b380e47a6862f53fde9c4d, type: 2}
+--- !u!114 &72181940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 792e7356a4876d24d8d452fcebecb99d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.PhoneLink
+  httpsPort: 8443
+  httpPort: 8081
+--- !u!4 &72181941
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72181935}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1572045653
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1572045656}
+  - component: {fileID: 1572045655}
+  - component: {fileID: 1572045654}
   m_Layer: 0
   m_Name: "Cam\xE9ra"
   m_TagString: MainCamera
@@ -137,25 +243,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &89077234
+--- !u!81 &1572045654
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 89077233}
+  m_GameObject: {fileID: 1572045653}
   m_Enabled: 1
---- !u!20 &89077235
+--- !u!20 &1572045655
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 89077233}
+  m_GameObject: {fileID: 1572045653}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.55, g: 0.75, b: 0.92, a: 1}
+  m_BackGroundColor: {r: 0.8117647, g: 0.9098039, b: 0.9607843, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -177,7 +283,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 120
+  far clip plane: 180
   field of view: 40
   orthographic: 0
   orthographic size: 5
@@ -196,13 +302,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &89077236
+--- !u!4 &1572045656
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 89077233}
+  m_GameObject: {fileID: 1572045653}
   serializedVersion: 2
   m_LocalRotation: {x: 0.13317443, y: 0, z: 0, w: 0.9910926}
   m_LocalPosition: {x: 0, y: 5.2, z: -23}
@@ -211,7 +317,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &650299338
+--- !u!1 &1705058824
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -219,94 +325,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 650299343}
-  - component: {fileID: 650299342}
-  - component: {fileID: 650299341}
-  - component: {fileID: 650299340}
-  - component: {fileID: 650299339}
-  m_Layer: 0
-  m_Name: Jeu
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &650299339
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 650299338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdb28dcb8fdd21c47ab07db8a3142ec1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RallyHud
---- !u!114 &650299340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 650299338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebf515016851c3648b8b7ade2bbd4a27, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RallyController
---- !u!114 &650299341
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 650299338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ceaeeb4bfd27b40bb01506fc6adf84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.RacketInput
-  config: {fileID: 11400000, guid: 02d3ac6c35b380e47a6862f53fde9c4d, type: 2}
---- !u!114 &650299342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 650299338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 792e7356a4876d24d8d452fcebecb99d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TennisPhone.Runtime::TennisPhone.PhoneLink
-  httpsPort: 8443
-  httpPort: 8081
---- !u!4 &650299343
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 650299338}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1520207851
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1520207853}
-  - component: {fileID: 1520207852}
+  - component: {fileID: 1705058826}
+  - component: {fileID: 1705058825}
   m_Layer: 0
   m_Name: Soleil
   m_TagString: Untagged
@@ -314,18 +334,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!108 &1520207852
+--- !u!108 &1705058825
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1520207851}
+  m_GameObject: {fileID: 1705058824}
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1.15
+  m_Color: {r: 1, g: 0.95686275, b: 0.8784314, a: 1}
+  m_Intensity: 0.9
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -334,7 +354,7 @@ Light:
     m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0.6
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -379,15 +399,15 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &1520207853
+--- !u!4 &1705058826
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1520207851}
+  m_GameObject: {fileID: 1705058824}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.418082, y: -0.27027258, z: 0.13182074, w: 0.85719514}
+  m_LocalRotation: {x: 0.4100647, y: 0.21925572, z: -0.102240615, w: 0.8793866}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -398,6 +418,6 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 89077236}
-  - {fileID: 1520207853}
-  - {fileID: 650299343}
+  - {fileID: 1572045656}
+  - {fileID: 1705058826}
+  - {fileID: 72181941}

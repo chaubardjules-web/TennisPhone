@@ -291,20 +291,6 @@ namespace TennisPhone
             GUILayout.EndArea();
         }
 
-        void LateUpdate()
-        {
-            Camera view = Camera.main;
-            if (view == null || rally == null)
-            {
-                return;
-            }
-
-            // La caméra accompagne un peu le joueur sur la largeur.
-            Vector3 position = view.transform.position;
-            position.x = Mathf.Lerp(position.x, rally.PlayerPosition.x * 0.45f, 1f - Mathf.Exp(-4f * Time.deltaTime));
-            view.transform.position = position;
-        }
-
         // ---------------------------------------------------------------- Outils
 
         void DrawQr(string url, float size)

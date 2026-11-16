@@ -57,6 +57,39 @@ namespace TennisPhone.EditorTools
 
         public const string CourtScenePath = "Assets/TennisPhone/Scenes/Court.unity";
 
+        /// <summary>Ambiance et surface de la scène du court ; réglables ensuite sur le composant MatchVisuals.</summary>
+        const Ambiance CourtAmbiance = Ambiance.Jour;
+        const Surface CourtSurface = Surface.Gazon;
+
+        /// <summary>
+        /// Un matériau modèle par recette (Mat, Lumineux, Voile), référencé par la scène : sans
+        /// cela, un build autonome pourrait retirer ces shaders, que le jeu ne cherche que par leur nom.
+        /// </summary>
+        static Material[] EnsureShaderTemplates()
+        {
+            return new[]
+            {
+                EnsureTemplate("Mat", () => Palette.NewMat(Palette.Creme)),
+                EnsureTemplate("Lumineux", () => Palette.NewLumineux(Palette.Corail, Palette.Corail * 0.9f)),
+                EnsureTemplate("Voile", () => Palette.NewVoile(Palette.Ombre)),
+            };
+        }
+
+        static Material EnsureTemplate(string name, System.Func<Material> create)
+        {
+            string path = "Assets/TennisPhone/Config/" + name + ".mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = create();
+                material.name = name;
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            return material;
+        }
+
         [MenuItem("TennisPhone/Creer la scene du court")]
         public static void BuildCourtScene()
         {
@@ -67,21 +100,17 @@ namespace TennisPhone.EditorTools
             var cameraObject = new GameObject("Caméra");
             cameraObject.tag = "MainCamera";
             Camera camera = cameraObject.AddComponent<Camera>();
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.55f, 0.75f, 0.92f);
             camera.fieldOfView = 40f;
             camera.nearClipPlane = 0.1f;
-            camera.farClipPlane = 120f;
             cameraObject.transform.position = new Vector3(0f, 5.2f, -23f);
             cameraObject.transform.LookAt(new Vector3(0f, 0f, -4f));
             cameraObject.AddComponent<AudioListener>();
 
             var lightObject = new GameObject("Soleil");
             Light light = lightObject.AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = 1.15f;
-            light.shadows = LightShadows.Soft;
-            lightObject.transform.rotation = Quaternion.Euler(52f, -35f, 0f);
+
+            // Fond et profondeur de la caméra, soleil, lumière d'ambiance et brume (ART_DIRECTION.md).
+            Atmosphere.Apply(CourtAmbiance, camera, light);
 
             var game = new GameObject("Jeu");
             game.AddComponent<PhoneLink>();
@@ -89,6 +118,9 @@ namespace TennisPhone.EditorTools
             racketInput.SetConfig(config);
             EditorUtility.SetDirty(racketInput);
             game.AddComponent<RallyController>();
+            MatchVisuals visuals = game.AddComponent<MatchVisuals>();
+            visuals.Configure(CourtAmbiance, CourtSurface, light, EnsureShaderTemplates());
+            EditorUtility.SetDirty(visuals);
             game.AddComponent<RallyHud>();
 
             Directory.CreateDirectory(Path.GetDirectoryName(CourtScenePath));

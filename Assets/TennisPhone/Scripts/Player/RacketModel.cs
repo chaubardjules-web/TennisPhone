@@ -8,24 +8,33 @@ namespace TennisPhone
     /// </summary>
     public static class RacketModel
     {
-        public static readonly Color StringColor = new Color(0.95f, 0.92f, 0.75f);
+        /// <summary>Distance du bout du manche au centre du tamis, en mètres.</summary>
+        public const float HeadDistance = 0.47f;
 
-        static readonly Color GripColor = new Color(0.15f, 0.15f, 0.17f);
-        static readonly Color FrameColor = new Color(0.85f, 0.25f, 0.2f);
+        public static Color StringColor => Palette.Cordage;
 
-        /// <summary>Construit la raquette et renvoie sa racine. « strings » reçoit le cordage.</summary>
+        /// <summary>Construit une raquette aux couleurs du joueur. « strings » reçoit le cordage.</summary>
         public static Transform Build(out Renderer strings)
+        {
+            return Build(Palette.Framboise, out strings);
+        }
+
+        /// <summary>
+        /// Construit la raquette et renvoie sa racine. Le cœur et le cadre prennent la couleur du
+        /// camp ; « strings » reçoit le cordage, la partie la plus visible, avec un matériau à lui.
+        /// </summary>
+        public static Transform Build(Color teamColor, out Renderer strings)
         {
             var root = new GameObject("Raquette").transform;
 
             CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Manche", new Vector3(0f, 0f, 0.1f),
-                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.032f, 0.1f, 0.032f), GripColor);
+                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.032f, 0.1f, 0.032f), Palette.Encre);
             CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cœur", new Vector3(0f, 0f, 0.26f),
-                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.022f, 0.07f, 0.022f), FrameColor);
-            CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cadre", new Vector3(0f, 0f, 0.47f),
-                Quaternion.identity, new Vector3(0.27f, 0.011f, 0.33f), FrameColor);
-            Transform cordage = CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cordage", new Vector3(0f, 0f, 0.47f),
-                Quaternion.identity, new Vector3(0.24f, 0.013f, 0.3f), StringColor);
+                Quaternion.Euler(90f, 0f, 0f), new Vector3(0.022f, 0.07f, 0.022f), teamColor);
+            CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cadre", new Vector3(0f, 0f, HeadDistance),
+                Quaternion.identity, new Vector3(0.27f, 0.011f, 0.33f), teamColor);
+            Transform cordage = CourtBuilder.Primitive(PrimitiveType.Cylinder, root, "Cordage", new Vector3(0f, 0f, HeadDistance),
+                Quaternion.identity, new Vector3(0.24f, 0.013f, 0.3f), Palette.NewMat(Palette.Cordage));
 
             strings = cordage.GetComponent<Renderer>();
             return root;
