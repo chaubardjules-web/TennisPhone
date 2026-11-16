@@ -36,6 +36,8 @@ namespace TennisPhone
         GUIStyle titleStyle;
         GUIStyle textStyle;
         GUIStyle bigStyle;
+        GUIStyle hugeStyle;
+        GUIStyle centeredStyle;
         GUIStyle errorStyle;
 
         void Awake()
@@ -149,6 +151,42 @@ namespace TennisPhone
             DrawLeftPanel(new Rect(16f, 16f, 330f, ReferenceHeight - 32f));
             DrawRightPanel(new Rect(width - 346f, 16f, 330f, ReferenceHeight - 32f));
             DrawLastSwing(new Rect(width * 0.5f - 260f, ReferenceHeight - 150f, 520f, 134f));
+            DrawGuidedPrompt(new Rect(width * 0.5f - 300f, 24f, 600f, 190f));
+        }
+
+        void DrawGuidedPrompt(Rect area)
+        {
+            if (recorder == null || string.IsNullOrEmpty(recorder.GuidedTitle))
+            {
+                return;
+            }
+
+            bool flash = recorder.IsGuided && !recorder.GuidedPreparing && recorder.PromptFlash;
+            Color previous = GUI.color;
+            if (flash)
+            {
+                Fill(area, new Color(0.25f, 0.75f, 0.4f, 0.9f));
+            }
+
+            GUI.Box(area, GUIContent.none);
+            GUILayout.BeginArea(new Rect(area.x + 14f, area.y + 8f, area.width - 28f, area.height - 16f));
+            GUILayout.Label(recorder.GuidedTitle, hugeStyle);
+            GUILayout.Label(recorder.GuidedHint, centeredStyle);
+
+            if (recorder.IsGuided)
+            {
+                string action = recorder.GuidedPreparing
+                    ? "Début dans " + Mathf.CeilToInt(recorder.PhaseRemaining) + " s"
+                    : (flash ? "MAINTENANT !" : "…");
+                GUILayout.Label(recorder.GuidedProgress + "    " + action, bigStyle);
+                if (!recorder.GuidedPreparing && recorder.Label == 0)
+                {
+                    GUILayout.Label("Encore " + Mathf.CeilToInt(recorder.PhaseRemaining) + " s", centeredStyle);
+                }
+            }
+
+            GUILayout.EndArea();
+            GUI.color = previous;
         }
 
         void DrawLeftPanel(Rect area)
@@ -181,14 +219,11 @@ namespace TennisPhone
             {
                 GUILayout.Space(8f);
                 GUILayout.Label("Enregistrement des capteurs", titleStyle);
+                GUILayout.Label("G : enregistrement guidé (environ 2 minutes). L'écran annonce chaque geste, "
+                    + "il n'y a rien d'autre à toucher.\nC : enregistrement libre.", textStyle);
                 GUILayout.Label(recorder.IsRecording
-                    ? "EN COURS : " + recorder.RecordedSamples + " mesures (C pour arrêter)"
-                    : "Arrêté (C pour démarrer)", recorder.IsRecording ? errorStyle : textStyle);
-                GUILayout.Label("Geste en cours (touches 0 à 5, ou Page préc./suiv.) :", textStyle);
-                for (int i = 0; i < SensorRecorder.Labels.Length; i++)
-                {
-                    GUILayout.Label((i == recorder.Label ? "> " : "   ") + SensorRecorder.Labels[i], textStyle);
-                }
+                    ? "EN COURS : " + recorder.RecordedSamples + " mesures"
+                    : "Arrêté", recorder.IsRecording ? errorStyle : textStyle);
             }
 
             GUILayout.EndArea();
@@ -358,6 +393,8 @@ namespace TennisPhone
             titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold };
             textStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = true };
             bigStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            hugeStyle = new GUIStyle(GUI.skin.label) { fontSize = 44, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            centeredStyle = new GUIStyle(textStyle) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
             errorStyle = new GUIStyle(textStyle);
             errorStyle.normal.textColor = new Color(1f, 0.55f, 0.45f);
         }

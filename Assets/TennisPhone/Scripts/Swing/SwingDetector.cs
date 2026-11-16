@@ -18,6 +18,9 @@ namespace TennisPhone
             Cooldown,
         }
 
+        // Délai minimal après le maximum avant de considérer que le pic est passé.
+        const double PeakConfirmSeconds = 0.03;
+
         State state = State.Idle;
         double startTime;
         double peakTime;
@@ -83,9 +86,16 @@ namespace TennisPhone
                     return false;
 
                 case State.Tracking:
-                    Accumulate(frame);
+                    float score = Accumulate(frame);
                     double duration = frame.TimeSeconds - startTime;
-                    if (duration >= Settings.MaxDuration || (released && duration >= Settings.MinDuration))
+
+                    // Le pic est passé : le geste est retombé nettement sous son maximum.
+                    bool peakPassed = Settings.PeakFallRatio > 0f
+                        && score <= peakScore * Settings.PeakFallRatio
+                        && frame.TimeSeconds - peakTime >= PeakConfirmSeconds;
+
+                    if (duration >= Settings.MaxDuration
+                        || ((released || peakPassed) && duration >= Settings.MinDuration))
                     {
                         swing = BuildSwing((float)duration);
                         state = State.Cooldown;
@@ -111,7 +121,8 @@ namespace TennisPhone
             }
         }
 
-        void Accumulate(MotionFrame frame)
+        /// <summary>Ajoute une mesure au geste en cours et renvoie son intensité.</summary>
+        float Accumulate(MotionFrame frame)
         {
             float score = frame.Acceleration / Math.Max(Settings.AccelerationThreshold, 0.001f)
                 + frame.RotationSpeed / Math.Max(Settings.RotationThreshold, 0.001f);
@@ -126,6 +137,7 @@ namespace TennisPhone
             yawSum += frame.YawRate;
             rollSum += frame.RollRate;
             frameCount++;
+            return score;
         }
 
         SwingEvent BuildSwing(float duration)

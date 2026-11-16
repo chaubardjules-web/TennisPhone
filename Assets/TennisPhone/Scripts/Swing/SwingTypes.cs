@@ -76,6 +76,7 @@ namespace TennisPhone
         public float AccelerationThreshold;
         public float RotationThreshold;
         public float ReleaseRatio;
+        public float PeakFallRatio;
         public float MinDuration;
         public float MaxDuration;
         public float Cooldown;

@@ -13,7 +13,7 @@ namespace TennisPhone
         {
             public SwingEvent Swing;
 
-            /// <summary>Étiquette du geste au moment du pic (voir SensorRecorder.Labels).</summary>
+            /// <summary>Étiquette du geste à la fin du swing (numéro de série de SensorRecorder).</summary>
             public int Label;
         }
 
@@ -28,9 +28,10 @@ namespace TennisPhone
                     continue;
                 }
 
-                // Colonnes : phoneMs, serverMs, puis 12 valeurs, puis l'étiquette.
+                // Colonnes : phoneMs, serverMs, puis 12 valeurs, puis l'étiquette
+                // (et, dans les fichiers récents, le numéro du geste dans sa série).
                 string[] parts = csvLine.Trim().Split(',');
-                if (parts.Length != 15
+                if ((parts.Length != 15 && parts.Length != 16)
                     || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double serverMs)
                     || !int.TryParse(parts[14], NumberStyles.Integer, CultureInfo.InvariantCulture, out int label))
                 {

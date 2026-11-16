@@ -23,11 +23,14 @@ namespace TennisPhone
         [Tooltip("Le swing se termine quand l'accélération ou la rotation retombe sous cette fraction de son seuil.")]
         [Range(0.1f, 0.95f)] public float swingReleaseRatio = 0.6f;
 
+        [Tooltip("Le swing est validé dès que le geste retombe sous cette fraction de son maximum : le pic est passé.")]
+        [Range(0.1f, 0.95f)] public float swingPeakFallRatio = 0.5f;
+
         [Tooltip("Durée minimale d'un geste (secondes). En dessous, c'est une simple secousse.")]
         [Min(0f)] public float swingMinDuration = 0.03f;
 
         [Tooltip("Durée maximale analysée (secondes). Le swing est validé à cette durée même s'il continue.")]
-        [Min(0.05f)] public float swingMaxDuration = 0.25f;
+        [Min(0.05f)] public float swingMaxDuration = 0.6f;
 
         [Tooltip("Pause après un swing (secondes) pendant laquelle aucun autre swing n'est compté.")]
         [Min(0f)] public float swingCooldown = 0.35f;
@@ -82,6 +85,7 @@ namespace TennisPhone
                 AccelerationThreshold = swingAccelerationThreshold,
                 RotationThreshold = swingRotationThreshold,
                 ReleaseRatio = swingReleaseRatio,
+                PeakFallRatio = swingPeakFallRatio,
                 MinDuration = swingMinDuration,
                 MaxDuration = swingMaxDuration,
                 Cooldown = swingCooldown,

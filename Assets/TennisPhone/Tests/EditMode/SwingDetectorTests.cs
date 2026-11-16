@@ -15,6 +15,7 @@ namespace TennisPhone.Tests
                 AccelerationThreshold = 12f,
                 RotationThreshold = 220f,
                 ReleaseRatio = 0.6f,
+                PeakFallRatio = 0.5f,
                 MinDuration = 0.03f,
                 MaxDuration = 0.25f,
                 Cooldown = 0.35f,

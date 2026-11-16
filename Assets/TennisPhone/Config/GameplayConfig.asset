@@ -17,7 +17,7 @@ MonoBehaviour:
   swingRotationThreshold: 220
   swingReleaseRatio: 0.6
   swingMinDuration: 0.03
-  swingMaxDuration: 0.25
+  swingMaxDuration: 0.6
   swingCooldown: 0.35
   invertSwingSide: 0
   powerAccelerationMin: 12
